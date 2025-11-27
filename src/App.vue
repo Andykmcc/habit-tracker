@@ -51,35 +51,24 @@ const nextMonth = () => {
 };
 
 // Hold-to-clear functionality
-const clearProgress = ref(0);
-let clearAnimationFrame: number | null = null;
+const isClearing = ref(false);
+let clearTimeout: number | null = null;
 
 const startClearHold = () => {
-  const startTime = Date.now();
-  const duration = 3000; // 3 seconds
+  isClearing.value = true;
   
-  const animate = () => {
-    const elapsed = Date.now() - startTime;
-    clearProgress.value = Math.min((elapsed / duration) * 100, 100);
-    
-    if (clearProgress.value >= 100) {
-      stopClearHold();
-      clearAllLogs();
-      clearProgress.value = 0;
-    } else {
-      clearAnimationFrame = requestAnimationFrame(animate);
-    }
-  };
-  
-  clearAnimationFrame = requestAnimationFrame(animate);
+  clearTimeout = window.setTimeout(() => {
+    clearAllLogs();
+    isClearing.value = false;
+  }, 3000); // 3 seconds
 };
 
 const stopClearHold = () => {
-  if (clearAnimationFrame) {
-    cancelAnimationFrame(clearAnimationFrame);
-    clearAnimationFrame = null;
+  if (clearTimeout) {
+    window.clearTimeout(clearTimeout);
+    clearTimeout = null;
   }
-  clearProgress.value = 0;
+  isClearing.value = false;
 };
 
 // Computed Stats
@@ -307,18 +296,18 @@ const getDayClasses = (day: Date | null, index: number) => {
           @touchstart="startClearHold"
           @touchend="stopClearHold"
           @touchcancel="stopClearHold"
-          class="relative px-6 py-3 rounded-lg text-sm font-medium transition-all duration-300 focus:outline-none border-2 border-red-300 text-red-600 overflow-hidden"
+          class="relative px-6 py-3 rounded-lg text-sm font-medium focus:outline-none border-2 border-red-300 text-red-600 overflow-hidden"
           style="user-select: none; -webkit-user-select: none;"
         >
           <!-- Progress bar background -->
           <div 
-            class="absolute inset-0 bg-red-100 transition-all duration-75"
-            :style="{ width: clearProgress + '%' }"
+            class="absolute inset-0 bg-red-100 origin-left"
+            :class="isClearing ? 'clear-progress-active' : 'clear-progress-inactive'"
           ></div>
           
           <!-- Button text -->
           <span class="relative z-10">
-            {{ clearProgress > 0 ? 'Hold to Clear...' : 'Clear All History' }}
+            {{ isClearing ? 'Hold to Clear...' : 'Clear All History' }}
           </span>
         </button>
       </div>
@@ -326,5 +315,17 @@ const getDayClasses = (day: Date | null, index: number) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.clear-progress-inactive {
+  width: 0%;
+  transition: width 0.15s ease-out;
+}
+
+.clear-progress-active {
+  width: 100%;
+  transition: width 3s linear;
+}
+</style>
 
 
