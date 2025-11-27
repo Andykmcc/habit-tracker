@@ -52,14 +52,13 @@ const nextMonth = () => {
 
 // Hold-to-clear functionality
 const clearProgress = ref(0);
-let clearTimer: number | null = null;
-let clearInterval: number | null = null;
+let clearAnimationFrame: number | null = null;
 
 const startClearHold = () => {
   const startTime = Date.now();
   const duration = 3000; // 3 seconds
   
-  clearInterval = window.setInterval(() => {
+  const animate = () => {
     const elapsed = Date.now() - startTime;
     clearProgress.value = Math.min((elapsed / duration) * 100, 100);
     
@@ -67,18 +66,18 @@ const startClearHold = () => {
       stopClearHold();
       clearAllLogs();
       clearProgress.value = 0;
+    } else {
+      clearAnimationFrame = requestAnimationFrame(animate);
     }
-  }, 16); // ~60fps
+  };
+  
+  clearAnimationFrame = requestAnimationFrame(animate);
 };
 
 const stopClearHold = () => {
-  if (clearInterval) {
-    window.clearInterval(clearInterval);
-    clearInterval = null;
-  }
-  if (clearTimer) {
-    window.clearTimeout(clearTimer);
-    clearTimer = null;
+  if (clearAnimationFrame) {
+    cancelAnimationFrame(clearAnimationFrame);
+    clearAnimationFrame = null;
   }
   clearProgress.value = 0;
 };
