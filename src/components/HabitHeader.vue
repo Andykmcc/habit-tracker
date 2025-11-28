@@ -15,9 +15,9 @@ const activityName = defineModel<string>({ required: true });
     <input 
       v-model="activityName"
       type="text" 
-      class="text-3xl font-bold text-center bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none transition-colors w-full"
+      class="text-3xl font-bold text-center bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none transition-colors w-full habit-header-name"
       placeholder="Name your habit..."
     />
-    <p class="text-gray-500">{{ format(currentDate, 'EEEE, MMMM do, yyyy') }}</p>
+    <p class="text-gray-500 habit-header-date">{{ format(currentDate, 'EEEE, MMMM do, yyyy') }}</p>
   </header>
 </template>

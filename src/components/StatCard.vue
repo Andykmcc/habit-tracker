@@ -7,7 +7,7 @@ defineProps<{
 
 <template>
   <div class="bg-white p-4 rounded-xl shadow-sm text-center">
-    <div class="text-2xl font-bold text-gray-900">{{ value }}</div>
-    <div class="text-xs text-gray-500 uppercase tracking-wide">{{ name }}</div>
+    <div class="text-2xl font-bold text-gray-900 stat-card-value">{{ value }}</div>
+    <div class="text-xs text-gray-500 uppercase tracking-wide stat-card-name">{{ name }}</div>
   </div>
 </template>

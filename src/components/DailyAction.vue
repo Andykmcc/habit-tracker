@@ -14,7 +14,7 @@ const toggleStatus = (newStatus: boolean) => {
       <!-- Negative Button -->
       <button 
         @click="toggleStatus(false)"
-        class="rounded-full flex items-center justify-center text-5xl transition-all duration-300 focus:outline-none border-4 p-10"
+        class="rounded-full flex items-center justify-center text-5xl transition-all duration-300 focus:outline-none border-4 p-10 daily-action-negative-btn"
         :class="status === false ? 'bg-red-500 text-white border-red-200 hover:bg-red-600' : 'bg-gray-100 text-gray-400 border-gray-100 hover:bg-gray-200'"
       >
         <span>✕</span>
@@ -23,14 +23,14 @@ const toggleStatus = (newStatus: boolean) => {
       <!-- Positive Button -->
       <button 
         @click="toggleStatus(true)"
-        class="rounded-full flex items-center justify-center text-5xl transition-all duration-300 focus:outline-none border-4 p-10"
+        class="rounded-full flex items-center justify-center text-5xl transition-all duration-300 focus:outline-none border-4 p-10 daily-action-positive-btn"
         :class="status === true ? 'bg-cyan-500 text-white border-cyan-200 hover:bg-cyan-600' : 'bg-gray-100 text-gray-400 border-gray-100 hover:bg-gray-200'"
       >
         <span>✓</span>
       </button>
     </div>
   
-    <p class="text-lg font-medium text-gray-500">
+    <p class="text-lg font-medium text-gray-500 daily-action-status">
       {{ status === true ? 'Completed!' : status === false ? 'Missed' : 'Mark today' }}
     </p>
   </div>
