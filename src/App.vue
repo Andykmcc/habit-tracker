@@ -1,45 +1,26 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, computed } from 'vue';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, subDays, isToday, parseISO, addMonths, subMonths } from 'date-fns';
-import { 
-  getActivityNameObservable, 
-  setActivityName, 
-  getLogsObservable, 
-  upsertLog,
-  clearAllLogs,
-  type DailyLogs 
-} from './store';
-import { Subscription } from 'rxjs';
+import { useHabitStore } from './store';
+import { storeToRefs } from 'pinia';
+
+// Store
+const store = useHabitStore();
+const { logs, activityName } = storeToRefs(store);
 
 // State
-const activityName = ref('');
-const logs = ref<DailyLogs>({});
 const currentDate = ref(new Date());
 const viewingMonth = ref(new Date());
-
-// Subscriptions
-const subscriptions: Subscription[] = [];
-
-onMounted(() => {
-  subscriptions.push(
-    getActivityNameObservable().subscribe(name => activityName.value = name),
-    getLogsObservable().subscribe(data => logs.value = data)
-  );
-});
-
-onUnmounted(() => {
-  subscriptions.forEach(sub => sub.unsubscribe());
-});
 
 // Actions
 const updateActivityName = (e: Event) => {
   const target = e.target as HTMLInputElement;
-  setActivityName(target.value);
+  store.setActivityName(target.value);
 };
 
 const setStatus = (status: boolean | null) => {
   const todayStr = format(new Date(), 'yyyy-MM-dd');
-  upsertLog(todayStr, status);
+  store.upsertLog(todayStr, status);
 };
 
 const prevMonth = () => {
@@ -58,7 +39,7 @@ const startClearHold = () => {
   isClearing.value = true;
   
   clearTimeout = window.setTimeout(() => {
-    clearAllLogs();
+    store.clearAllLogs();
     isClearing.value = false;
   }, 3000); // 3 seconds
 };
