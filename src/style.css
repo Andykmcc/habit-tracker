@@ -5,3 +5,7 @@
     --color-cyan-600: #0891b2;
     --color-cyan-200: #a5f3fc;
 }
+
+body {
+    background-color: rgb(249 250 251);
+}

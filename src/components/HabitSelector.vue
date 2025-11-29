@@ -68,7 +68,7 @@ const toggleDropdown = () => {
     <!-- Dropdown menu -->
     <div
       v-if="showDropdown"
-      class="absolute left-0 bottom-12 z-50 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200"
+      class="absolute left-1/2 -translate-x-1/2 bottom-12 z-50 mt-2 w-72 max-w-[min(18rem,calc(100vw-2rem))] bg-white rounded-lg shadow-lg border border-gray-200"
     >
       <!-- Habits list -->
       <div class="max-h-64 overflow-y-auto py-1">
