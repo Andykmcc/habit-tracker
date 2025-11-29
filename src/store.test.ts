@@ -4,20 +4,32 @@ import { useHabitStore } from './store';
 
 describe('useHabitStore', () => {
     beforeEach(() => {
-        // Create a fresh pinia instance before each test
         setActivePinia(createPinia());
-
-        // Clear localStorage before each test
         localStorage.clear();
+    });
+
+    it('should create a habit and set it as active', () => {
+        const store = useHabitStore();
+
+        // Create a habit
+        const habitId = store.createHabit('Morning Routine');
+
+        // Verify habit was created
+        expect(store.habits[habitId]).toBeDefined();
+        expect(store.habits[habitId]!.name).toBe('Morning Routine');
+
+        // Verify it's set as active
+        expect(store.activeHabitId).toBe(habitId);
+        expect(store.activityName).toBe('Morning Routine');
     });
 
     it('should set activity name', () => {
         const store = useHabitStore();
 
-        // Initially should have default value
-        expect(store.activityName).toBe('Daily Habit');
+        // Create a habit first
+        store.createHabit('Daily Habit');
 
-        // Set new activity name
+        // Change the name
         store.setActivityName('Morning Exercise');
 
         // Verify the change
@@ -27,7 +39,9 @@ describe('useHabitStore', () => {
     it('should upsert log entries', () => {
         const store = useHabitStore();
 
-        // Initially logs should be empty
+        // Create a habit first
+        store.createHabit('Daily Habit');
+
         expect(store.logs).toEqual({});
 
         // Add a completed entry
@@ -35,28 +49,28 @@ describe('useHabitStore', () => {
         expect(store.logs['2025-11-28']).toBe(true);
 
         // Add a failed entry
-        store.upsertLog('2025-11-27', false);
-        expect(store.logs['2025-11-27']).toBe(false);
+        store.upsertLog('2025-11-29', false);
+        expect(store.logs['2025-11-29']).toBe(false);
 
-        // Add a null entry (cleared)
-        store.upsertLog('2025-11-26', null);
-        expect(store.logs['2025-11-26']).toBe(null);
-
-        // Update an existing entry
+        // Update existing entry
         store.upsertLog('2025-11-28', false);
         expect(store.logs['2025-11-28']).toBe(false);
 
-        // Verify all entries are present
-        expect(Object.keys(store.logs).length).toBe(3);
+        // Clear an entry
+        store.upsertLog('2025-11-29', null);
+        expect(store.logs['2025-11-29']).toBe(null);
     });
 
     it('should clear all logs', () => {
         const store = useHabitStore();
 
-        // Add some logs first
+        // Create a habit first
+        store.createHabit('Daily Habit');
+
+        // Add some logs
         store.upsertLog('2025-11-28', true);
-        store.upsertLog('2025-11-27', false);
-        store.upsertLog('2025-11-26', null);
+        store.upsertLog('2025-11-29', false);
+        store.upsertLog('2025-11-30', true);
 
         // Verify logs exist
         expect(Object.keys(store.logs).length).toBe(3);
@@ -66,6 +80,48 @@ describe('useHabitStore', () => {
 
         // Verify logs are empty
         expect(store.logs).toEqual({});
-        expect(Object.keys(store.logs).length).toBe(0);
+    });
+
+    it('should switch between habits', () => {
+        const store = useHabitStore();
+
+        // Create two habits
+        const habit1 = store.createHabit('Morning Exercise');
+        const habit2 = store.createHabit('Evening Meditation');
+
+        // Add logs to first habit
+        store.setActiveHabit(habit1);
+        store.upsertLog('2025-11-28', true);
+
+        // Switch to second habit
+        store.setActiveHabit(habit2);
+        expect(store.activityName).toBe('Evening Meditation');
+        expect(Object.keys(store.logs).length).toBe(0); // No logs yet
+
+        // Add logs to second habit
+        store.upsertLog('2025-11-28', false);
+        expect(store.logs['2025-11-28']).toBe(false);
+
+        // Switch back to first habit
+        store.setActiveHabit(habit1);
+        expect(store.logs['2025-11-28']).toBe(true); // Original log preserved
+    });
+
+    it('should delete a habit and switch to another', () => {
+        const store = useHabitStore();
+
+        // Create two habits
+        const habit1 = store.createHabit('Habit 1');
+        const habit2 = store.createHabit('Habit 2');
+
+        store.setActiveHabit(habit1);
+        expect(store.activeHabitId).toBe(habit1);
+
+        // Delete active habit
+        store.deleteHabit(habit1);
+
+        // Should auto-switch to remaining habit
+        expect(store.activeHabitId).toBe(habit2);
+        expect(store.activityName).toBe('Habit 2');
     });
 });

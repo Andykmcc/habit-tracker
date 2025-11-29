@@ -1,8 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { createPinia } from 'pinia';
 import HabitHeader from './HabitHeader.vue';
 
 describe('HabitHeader', () => {
+    beforeEach(() => {
+        localStorage.clear();
+    });
+
     it('should render the date in the correct format', () => {
         // Arrange: Create a specific date for testing
         const testDate = new Date('2025-11-28T10:00:00');
@@ -12,6 +17,9 @@ describe('HabitHeader', () => {
             props: {
                 currentDate: testDate,
                 modelValue: 'Test Habit'
+            },
+            global: {
+                plugins: [createPinia()]
             }
         });
 
@@ -29,6 +37,9 @@ describe('HabitHeader', () => {
             props: {
                 currentDate: testDate,
                 modelValue: 'Daily Exercise'
+            },
+            global: {
+                plugins: [createPinia()]
             }
         });
 
