@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { format, subDays, parseISO } from 'date-fns';
 import { useHabitStore } from './store';
 import { storeToRefs } from 'pinia';
@@ -8,10 +8,18 @@ import StatCard from './components/StatCard.vue';
 import DailyAction from './components/DailyAction.vue';
 import Calendar from './components/Calendar.vue';
 import ClearButton from './components/ClearButton.vue';
+import HabitSelector from './components/HabitSelector.vue';
 
 // Store
 const store = useHabitStore();
 const { logs } = storeToRefs(store);
+
+// Ensure a habit exists
+onMounted(() => {
+  if (Object.keys(store.habits).length === 0) {
+    store.createHabit('Daily Habit');
+  }
+});
 
 // Writable computed for activityName to work with v-model
 const activityName = computed({
@@ -106,7 +114,7 @@ const calculateMaxStreak = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 text-gray-900 font-sans p-4 sm:p-8">
+  <div class="min-h-screen bg-gray-50 text-gray-900 font-sans p-2 sm:p-4">
     <div class="max-w-md mx-auto space-y-8">
       
       <!-- Header -->
@@ -125,6 +133,11 @@ const calculateMaxStreak = () => {
 
       <!-- Calendar -->
       <Calendar :logs="logs" />
+
+      <!-- Habit selector and name -->
+    <div class="flex items-center justify-center gap-3 mb-2">
+      <HabitSelector />
+    </div>
 
       <!-- Clear History Button -->
       <ClearButton @clear="store.clearAllLogs()" />
