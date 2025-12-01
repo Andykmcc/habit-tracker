@@ -27,10 +27,6 @@ const dateLabel = computed(() => {
   }
   return format(props.selectedDate, 'EEEE, MMMM d');
 });
-
-const showReturnButton = computed(() => {
-  return !isToday(props.selectedDate);
-});
 </script>
 
 <template>
@@ -38,20 +34,13 @@ const showReturnButton = computed(() => {
     <!-- Date Header -->
     <div class="mb-4">
       <h2 class="text-xl font-semibold text-gray-700">{{ dateLabel }}</h2>
-      <button 
-        v-if="showReturnButton"
-        @click="emit('return-to-today')"
-        class="mt-2 text-sm text-cyan-600 hover:text-cyan-700 underline"
-      >
-        Return to Today
-      </button>
     </div>
 
     <div class="flex items-center justify-center gap-8 mb-6 flex-wrap">
       <!-- Negative Button -->
       <button 
         @click="toggleStatus(false)"
-        class="rounded-full flex items-center justify-center text-5xl transition-all duration-300 focus:outline-none border-4 p-10 daily-action-negative-btn"
+        class="rounded-full flex items-center justify-center text-5xl transition-all duration-300 focus:outline-none border-4 w-32 h-32 daily-action-negative-btn"
         :class="status === false ? 'bg-red-500 text-white border-red-200 hover:bg-red-600' : 'bg-gray-100 text-gray-400 border-gray-100 hover:bg-gray-200'"
       >
         <span>✕</span>
@@ -60,7 +49,7 @@ const showReturnButton = computed(() => {
       <!-- Positive Button -->
       <button 
         @click="toggleStatus(true)"
-        class="rounded-full flex items-center justify-center text-5xl transition-all duration-300 focus:outline-none border-4 p-10 daily-action-positive-btn"
+        class="rounded-full flex items-center justify-center text-5xl transition-all duration-300 focus:outline-none border-4 w-32 h-32 daily-action-positive-btn"
         :class="status === true ? 'bg-cyan-500 text-white border-cyan-200 hover:bg-cyan-600' : 'bg-gray-100 text-gray-400 border-gray-100 hover:bg-gray-200'"
       >
         <span>✓</span>
