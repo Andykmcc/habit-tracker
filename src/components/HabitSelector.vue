@@ -83,7 +83,7 @@ const toggleDropdown = () => {
           <button
             v-if="habitsList.length > 1"
             @click="deleteHabit(habit.id, $event)"
-            class="opacity-0 group-hover:opacity-100 p-1 text-red-600 hover:bg-red-50 rounded transition-opacity habit-selector-delete"
+            class="p-1 text-red-600 hover:bg-red-50 rounded habit-selector-delete"
             title="Delete habit"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
