@@ -8,13 +8,11 @@ describe('DailyAction', () => {
             // Arrange & Act
             const wrapper = mount(DailyAction, {
                 props: {
-                    modelValue: true
+                    status: true,
+                    note: '',
+                    selectedDate: new Date()
                 }
             });
-
-            // Assert: Check status text
-            const statusText = wrapper.find('.daily-action-status');
-            expect(statusText.text()).toBe('Completed!');
 
             // Assert: Check positive button is active (has cyan background)
             const positiveBtn = wrapper.find('.daily-action-positive-btn');
@@ -31,13 +29,11 @@ describe('DailyAction', () => {
             // Arrange & Act
             const wrapper = mount(DailyAction, {
                 props: {
-                    modelValue: false
+                    status: false,
+                    note: '',
+                    selectedDate: new Date()
                 }
             });
-
-            // Assert: Check status text
-            const statusText = wrapper.find('.daily-action-status');
-            expect(statusText.text()).toBe('Missed');
 
             // Assert: Check negative button is active (has red background)
             const negativeBtn = wrapper.find('.daily-action-negative-btn');
@@ -54,13 +50,11 @@ describe('DailyAction', () => {
             // Arrange & Act
             const wrapper = mount(DailyAction, {
                 props: {
-                    modelValue: null
+                    status: null,
+                    note: '',
+                    selectedDate: new Date()
                 }
             });
-
-            // Assert: Check status text
-            const statusText = wrapper.find('.daily-action-status');
-            expect(statusText.text()).toBe('Mark today');
 
             // Assert: Both buttons should be inactive (gray background)
             const positiveBtn = wrapper.find('.daily-action-positive-btn');
@@ -71,6 +65,37 @@ describe('DailyAction', () => {
             expect(negativeBtn.classes()).toContain('bg-gray-100');
             expect(negativeBtn.classes()).toContain('text-gray-400');
         });
+
+        it('should render note textarea', () => {
+            // Arrange & Act
+            const wrapper = mount(DailyAction, {
+                props: {
+                    status: null,
+                    note: '',
+                    selectedDate: new Date()
+                }
+            });
+
+            // Assert: Check note textarea exists
+            const noteTextarea = wrapper.find('.daily-action-note');
+            expect(noteTextarea.exists()).toBe(true);
+            expect(noteTextarea.attributes('placeholder')).toBe('Add a note for today (optional)');
+        });
+
+        it('should display note content when provided', () => {
+            // Arrange & Act
+            const wrapper = mount(DailyAction, {
+                props: {
+                    status: true,
+                    note: 'Test note content',
+                    selectedDate: new Date()
+                }
+            });
+
+            // Assert: Check note textarea has the content
+            const noteTextarea = wrapper.find('.daily-action-note');
+            expect((noteTextarea.element as HTMLTextAreaElement).value).toBe('Test note content');
+        });
     });
 
     describe('User interactions', () => {
@@ -78,7 +103,9 @@ describe('DailyAction', () => {
             // Arrange
             const wrapper = mount(DailyAction, {
                 props: {
-                    modelValue: null
+                    status: null,
+                    note: '',
+                    selectedDate: new Date()
                 }
             });
 
@@ -86,16 +113,18 @@ describe('DailyAction', () => {
             const positiveBtn = wrapper.find('.daily-action-positive-btn');
             await positiveBtn.trigger('click');
 
-            // Assert: Check that update:modelValue event was emitted with true
-            expect(wrapper.emitted('update:modelValue')).toBeTruthy();
-            expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([true]);
+            // Assert: Check that update:status event was emitted with true
+            expect(wrapper.emitted('update:status')).toBeTruthy();
+            expect(wrapper.emitted('update:status')?.[0]).toEqual([true]);
         });
 
         it('should emit update when negative button is clicked from null state', async () => {
             // Arrange
             const wrapper = mount(DailyAction, {
                 props: {
-                    modelValue: null
+                    status: null,
+                    note: '',
+                    selectedDate: new Date()
                 }
             });
 
@@ -103,16 +132,18 @@ describe('DailyAction', () => {
             const negativeBtn = wrapper.find('.daily-action-negative-btn');
             await negativeBtn.trigger('click');
 
-            // Assert: Check that update:modelValue event was emitted with false
-            expect(wrapper.emitted('update:modelValue')).toBeTruthy();
-            expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([false]);
+            // Assert: Check that update:status event was emitted with false
+            expect(wrapper.emitted('update:status')).toBeTruthy();
+            expect(wrapper.emitted('update:status')?.[0]).toEqual([false]);
         });
 
         it('should toggle to null when clicking active positive button', async () => {
             // Arrange: Start with completed state
             const wrapper = mount(DailyAction, {
                 props: {
-                    modelValue: true
+                    status: true,
+                    note: '',
+                    selectedDate: new Date()
                 }
             });
 
@@ -121,14 +152,16 @@ describe('DailyAction', () => {
             await positiveBtn.trigger('click');
 
             // Assert: Should emit null to clear the status
-            expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([null]);
+            expect(wrapper.emitted('update:status')?.[0]).toEqual([null]);
         });
 
         it('should toggle to null when clicking active negative button', async () => {
             // Arrange: Start with missed state
             const wrapper = mount(DailyAction, {
                 props: {
-                    modelValue: false
+                    status: false,
+                    note: '',
+                    selectedDate: new Date()
                 }
             });
 
@@ -137,7 +170,44 @@ describe('DailyAction', () => {
             await negativeBtn.trigger('click');
 
             // Assert: Should emit null to clear the status
-            expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([null]);
+            expect(wrapper.emitted('update:status')?.[0]).toEqual([null]);
+        });
+
+        it('should emit update:note when note is typed', async () => {
+            // Arrange
+            const wrapper = mount(DailyAction, {
+                props: {
+                    status: true,
+                    note: '',
+                    selectedDate: new Date()
+                }
+            });
+
+            // Act: Type in the note textarea
+            const noteTextarea = wrapper.find('.daily-action-note');
+            await noteTextarea.setValue('New note');
+
+            // Assert: Check that update:note event was emitted
+            expect(wrapper.emitted('update:note')).toBeTruthy();
+            expect(wrapper.emitted('update:note')?.[0]).toEqual(['New note']);
+        });
+
+        it('should allow clearing the note', async () => {
+            // Arrange: Start with a note
+            const wrapper = mount(DailyAction, {
+                props: {
+                    status: true,
+                    note: 'Existing note',
+                    selectedDate: new Date()
+                }
+            });
+
+            // Act: Clear the note
+            const noteTextarea = wrapper.find('.daily-action-note');
+            await noteTextarea.setValue('');
+
+            // Assert: Check that update:note event was emitted with empty string
+            expect(wrapper.emitted('update:note')?.[0]).toEqual(['']);
         });
     });
 });

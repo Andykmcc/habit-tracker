@@ -3,7 +3,12 @@ import { useLocalStorage } from '@vueuse/core';
 import { computed } from 'vue';
 
 // Types
-export type DailyLogs = Record<string, boolean | null>; // date (YYYY-MM-DD) -> completed (true), failed (false), or skipped (null/undefined)
+export interface DailyLog {
+    status: boolean | null;
+    note?: string;
+}
+
+export type DailyLogs = Record<string, DailyLog>; // date (YYYY-MM-DD) -> { status, note }
 
 export interface Habit {
     id: string;
@@ -27,6 +32,21 @@ function generateId(): string {
     return `habit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
+// Helper: Migrate logs from old format (boolean | null) to new format ({ status, note })
+function migrateLogs(logs: any): DailyLogs {
+    const migratedLogs: DailyLogs = {};
+    for (const [date, value] of Object.entries(logs)) {
+        // If value is already an object with status, keep it
+        if (typeof value === 'object' && value !== null && 'status' in value) {
+            migratedLogs[date] = value as DailyLog;
+        } else {
+            // Convert boolean/null to new format
+            migratedLogs[date] = { status: value as boolean | null };
+        }
+    }
+    return migratedLogs;
+}
+
 // Migration function
 function migrateFromSingleHabit(): void {
     // Check if already migrated
@@ -40,10 +60,11 @@ function migrateFromSingleHabit(): void {
     // If old data exists, migrate it
     if (oldLogsStr || oldName) {
         const habitId = generateId();
+        const oldLogs = oldLogsStr ? JSON.parse(oldLogsStr) : {};
         const habit: Habit = {
             id: habitId,
             name: oldName || DEFAULT_ACTIVITY_NAME,
-            logs: oldLogsStr ? JSON.parse(oldLogsStr) : {},
+            logs: migrateLogs(oldLogs),
             createdAt: new Date().toISOString(),
         };
 
@@ -66,7 +87,21 @@ migrateFromSingleHabit();
 
 export const useHabitStore = defineStore('habit', () => {
     // State - using useLocalStorage for automatic persistence
-    const habits = useLocalStorage<Record<string, Habit>>(STORAGE_KEY_HABITS, {});
+    const habits = useLocalStorage<Record<string, Habit>>(STORAGE_KEY_HABITS, {}, {
+        serializer: {
+            read: (v: any) => {
+                const parsed = JSON.parse(v);
+                // Migrate existing habits to new log format
+                for (const habitId in parsed) {
+                    if (parsed[habitId].logs) {
+                        parsed[habitId].logs = migrateLogs(parsed[habitId].logs);
+                    }
+                }
+                return parsed;
+            },
+            write: (v: any) => JSON.stringify(v),
+        },
+    });
     const activeHabitId = useLocalStorage<string | null>(STORAGE_KEY_ACTIVE_HABIT, null);
 
     // Computed: Get active habit
@@ -130,14 +165,38 @@ export const useHabitStore = defineStore('habit', () => {
         };
     };
 
-    const upsertLog = (date: string, status: boolean | null): void => {
+    const upsertLog = (date: string, status: boolean | null, note?: string): void => {
         if (!activeHabit.value) return;
+
+        const existingLog = activeHabit.value.logs[date];
+        const updatedLog: DailyLog = {
+            status,
+            note: note !== undefined ? note : existingLog?.note,
+        };
 
         habits.value = {
             ...habits.value,
             [activeHabit.value.id]: {
                 ...activeHabit.value,
-                logs: { ...activeHabit.value.logs, [date]: status },
+                logs: { ...activeHabit.value.logs, [date]: updatedLog },
+            },
+        };
+    };
+
+    const setNote = (date: string, note: string): void => {
+        if (!activeHabit.value) return;
+
+        const existingLog = activeHabit.value.logs[date];
+        const updatedLog: DailyLog = {
+            status: existingLog?.status ?? null,
+            note: note || undefined, // Clear note if empty string
+        };
+
+        habits.value = {
+            ...habits.value,
+            [activeHabit.value.id]: {
+                ...activeHabit.value,
+                logs: { ...activeHabit.value.logs, [date]: updatedLog },
             },
         };
     };
@@ -168,6 +227,7 @@ export const useHabitStore = defineStore('habit', () => {
         setActiveHabit,
         setActivityName,
         upsertLog,
+        setNote,
         clearAllLogs,
     };
 });

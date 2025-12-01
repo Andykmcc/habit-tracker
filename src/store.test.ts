@@ -46,19 +46,20 @@ describe('useHabitStore', () => {
 
         // Add a completed entry
         store.upsertLog('2025-11-28', true);
-        expect(store.logs['2025-11-28']).toBe(true);
+        expect(store.logs['2025-11-28']?.status).toBe(true);
+        expect(store.logs['2025-11-28']?.note).toBeUndefined();
 
         // Add a failed entry
         store.upsertLog('2025-11-29', false);
-        expect(store.logs['2025-11-29']).toBe(false);
+        expect(store.logs['2025-11-29']?.status).toBe(false);
 
         // Update existing entry
         store.upsertLog('2025-11-28', false);
-        expect(store.logs['2025-11-28']).toBe(false);
+        expect(store.logs['2025-11-28']?.status).toBe(false);
 
         // Clear an entry
         store.upsertLog('2025-11-29', null);
-        expect(store.logs['2025-11-29']).toBe(null);
+        expect(store.logs['2025-11-29']?.status).toBe(null);
     });
 
     it('should clear all logs', () => {
@@ -100,11 +101,11 @@ describe('useHabitStore', () => {
 
         // Add logs to second habit
         store.upsertLog('2025-11-28', false);
-        expect(store.logs['2025-11-28']).toBe(false);
+        expect(store.logs['2025-11-28']?.status).toBe(false);
 
         // Switch back to first habit
         store.setActiveHabit(habit1);
-        expect(store.logs['2025-11-28']).toBe(true); // Original log preserved
+        expect(store.logs['2025-11-28']?.status).toBe(true); // Original log preserved
     });
 
     it('should delete a habit and switch to another', () => {
@@ -123,5 +124,54 @@ describe('useHabitStore', () => {
         // Should auto-switch to remaining habit
         expect(store.activeHabitId).toBe(habit2);
         expect(store.activityName).toBe('Habit 2');
+    });
+
+    it('should set and update notes independently', () => {
+        const store = useHabitStore();
+
+        // Create a habit
+        store.createHabit('Daily Habit');
+
+        // Set a note without a status
+        store.setNote('2025-11-28', 'Test note');
+        expect(store.logs['2025-11-28']?.note).toBe('Test note');
+        expect(store.logs['2025-11-28']?.status).toBe(null);
+
+        // Add status, note should remain
+        store.upsertLog('2025-11-28', true);
+        expect(store.logs['2025-11-28']?.status).toBe(true);
+        expect(store.logs['2025-11-28']?.note).toBe('Test note');
+
+        // Update note
+        store.setNote('2025-11-28', 'Updated note');
+        expect(store.logs['2025-11-28']?.note).toBe('Updated note');
+        expect(store.logs['2025-11-28']?.status).toBe(true);
+
+        // Clear note (empty string)
+        store.setNote('2025-11-28', '');
+        expect(store.logs['2025-11-28']?.note).toBeUndefined();
+        expect(store.logs['2025-11-28']?.status).toBe(true);
+    });
+
+    it('should support upsertLog with note parameter', () => {
+        const store = useHabitStore();
+
+        // Create a habit
+        store.createHabit('Daily Habit');
+
+        // Add log with note in one call
+        store.upsertLog('2025-11-28', true, 'Great day!');
+        expect(store.logs['2025-11-28']?.status).toBe(true);
+        expect(store.logs['2025-11-28']?.note).toBe('Great day!');
+
+        // Update status but preserve note
+        store.upsertLog('2025-11-28', false);
+        expect(store.logs['2025-11-28']?.status).toBe(false);
+        expect(store.logs['2025-11-28']?.note).toBe('Great day!');
+
+        // Update with new note
+        store.upsertLog('2025-11-28', null, 'Changed my mind');
+        expect(store.logs['2025-11-28']?.status).toBe(null);
+        expect(store.logs['2025-11-28']?.note).toBe('Changed my mind');
     });
 });

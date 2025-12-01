@@ -6,6 +6,12 @@ import type { DailyLogs } from '../store';
 // Props
 const props = defineProps<{
   logs: DailyLogs;
+  selectedDate: Date;
+}>();
+
+// Emits
+const emit = defineEmits<{
+  'date-selected': [date: Date];
 }>();
 
 // State
@@ -35,7 +41,33 @@ const calendarDays = computed(() => {
 
 const getDayStatus = (date: Date) => {
   const dateStr = format(date, 'yyyy-MM-dd');
-  return props.logs[dateStr];
+  return props.logs[dateStr]?.status;
+};
+
+const hasNote = (date: Date) => {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  return !!props.logs[dateStr]?.note;
+};
+
+const isClickable = (date: Date) => {
+  // Allow clicking on past dates and today, but not future dates
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const checkDate = new Date(date);
+  checkDate.setHours(0, 0, 0, 0);
+  return checkDate <= today;
+};
+
+const isSelected = (date: Date) => {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  const selectedStr = format(props.selectedDate, 'yyyy-MM-dd');
+  return dateStr === selectedStr;
+};
+
+const handleDateClick = (date: Date) => {
+  if (isClickable(date)) {
+    emit('date-selected', date);
+  }
 };
 
 const getDayClasses = (day: Date | null, index: number) => {
@@ -80,15 +112,27 @@ const getDayClasses = (day: Date | null, index: number) => {
       >
         <template v-if="day">
           <div 
-            class="w-8 h-8 flex items-center justify-center rounded-full text-sm transition-colors"
-            :class="[
-              getDayStatus(day) === true ? 'bg-cyan-500 text-white' : 
-              getDayStatus(day) === false ? 'bg-red-500 text-white' : 
-              'bg-gray-100 text-gray-400',
-              isToday(day) ? 'ring-2 ring-blue-500 ring-offset-1 p-4' : ''
-            ]"
+            class="relative w-full h-full flex flex-col items-center justify-center"
+            :class="isClickable(day) ? 'cursor-pointer' : 'cursor-default'"
+            @click="handleDateClick(day)"
           >
-            {{ format(day, 'd') }}
+            <div 
+              class="w-8 h-8 flex items-center justify-center rounded-full text-sm transition-colors"
+              :class="[
+                getDayStatus(day) === true ? 'bg-cyan-500 text-white' : 
+                getDayStatus(day) === false ? 'bg-red-500 text-white' : 
+                'bg-gray-100 text-gray-400',
+                isToday(day) ? 'ring-2 ring-blue-500 ring-offset-1' : '',
+                isSelected(day) ? 'ring-2 ring-purple-500 ring-offset-2' : ''
+              ]"
+            >
+              {{ format(day, 'd') }}
+            </div>
+            <!-- Note indicator -->
+            <div 
+              v-if="hasNote(day)"
+              class="absolute top-1 right-1 w-1 h-1 bg-blue-400 rounded-full"
+            />
           </div>
         </template>
       </div>

@@ -1,15 +1,52 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { format, isToday } from 'date-fns';
+
 // Modern v-model using defineModel for status (true = completed, false = failed, null = not set)
-const status = defineModel<boolean | null>({ required: true });
+const status = defineModel<boolean | null>('status', { required: true });
+const note = defineModel<string>('note', { default: '' });
+
+// Props
+const props = defineProps<{
+  selectedDate: Date;
+}>();
+
+// Emits
+const emit = defineEmits<{
+  'return-to-today': [];
+}>();
 
 const toggleStatus = (newStatus: boolean) => {
   // If clicking the same status, clear it (set to null), otherwise set the new status
   status.value = status.value === newStatus ? null : newStatus;
 };
+
+const dateLabel = computed(() => {
+  if (isToday(props.selectedDate)) {
+    return 'Today';
+  }
+  return format(props.selectedDate, 'EEEE, MMMM d');
+});
+
+const showReturnButton = computed(() => {
+  return !isToday(props.selectedDate);
+});
 </script>
 
 <template>
   <div class="bg-white rounded-2xl shadow-sm p-8 text-center">
+    <!-- Date Header -->
+    <div class="mb-4">
+      <h2 class="text-xl font-semibold text-gray-700">{{ dateLabel }}</h2>
+      <button 
+        v-if="showReturnButton"
+        @click="emit('return-to-today')"
+        class="mt-2 text-sm text-cyan-600 hover:text-cyan-700 underline"
+      >
+        Return to Today
+      </button>
+    </div>
+
     <div class="flex items-center justify-center gap-8 mb-6 flex-wrap">
       <!-- Negative Button -->
       <button 
@@ -30,8 +67,11 @@ const toggleStatus = (newStatus: boolean) => {
       </button>
     </div>
   
-    <p class="text-lg font-medium text-gray-500 daily-action-status">
-      {{ status === true ? 'Completed!' : status === false ? 'Missed' : 'Mark today' }}
-    </p>
+    <textarea 
+      v-model="note"
+      placeholder="Add a note for today (optional)"
+      class="w-full mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none daily-action-note"
+      rows="2"
+    ></textarea>
   </div>
 </template>

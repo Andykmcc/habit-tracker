@@ -29,23 +29,35 @@ const activityName = computed({
 
 // State
 const currentDate = ref(new Date());
+const selectedDate = ref(new Date()); // Currently selected date for viewing/editing
 
 // Computed
-const todayStr = computed(() => format(new Date(), 'yyyy-MM-dd'));
+const selectedDateStr = computed(() => format(selectedDate.value, 'yyyy-MM-dd'));
 
-// Writable computed for todayStatus to work with v-model
-const todayStatus = computed({
-  get: () => store.logs[todayStr.value] ?? null,
-  set: (status: boolean | null) => store.upsertLog(todayStr.value, status)
+// Writable computed for selected date's status to work with v-model
+const selectedStatus = computed({
+  get: () => store.logs[selectedDateStr.value]?.status ?? null,
+  set: (status: boolean | null) => store.upsertLog(selectedDateStr.value, status)
 });
+
+// Writable computed for selected date's note to work with v-model
+const selectedNote = computed({
+  get: () => store.logs[selectedDateStr.value]?.note ?? '',
+  set: (note: string) => store.setNote(selectedDateStr.value, note)
+});
+
+// Function to select a date
+const selectDate = (date: Date) => {
+  selectedDate.value = date;
+};
 
 // Computed Stats
 const stats = computed(() => {
   const entries = Object.entries(logs.value);
   // Count days with ANY status (true or false) as tracked days, excluding null/undefined
-  const trackedDays = entries.filter(([_, val]) => val !== null && val !== undefined);
+  const trackedDays = entries.filter(([_, log]) => log?.status !== null && log?.status !== undefined);
   const totalDays = trackedDays.length;
-  const completedDays = trackedDays.filter(([_, val]) => val === true).length;
+  const completedDays = trackedDays.filter(([_, log]) => log?.status === true).length;
   const successRate = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
   // Current Streak
@@ -53,10 +65,11 @@ const stats = computed(() => {
   let checkDate = new Date();
   
   // Check today
-  if (logs.value[format(checkDate, 'yyyy-MM-dd')] === true) {
+  const todayStatus = logs.value[format(checkDate, 'yyyy-MM-dd')]?.status;
+  if (todayStatus === true) {
     currentStreak++;
     checkDate = subDays(checkDate, 1);
-  } else if (logs.value[format(checkDate, 'yyyy-MM-dd')] === false) {
+  } else if (todayStatus === false) {
     // Today is explicitly failed, streak is 0
     return { totalDays, successRate, currentStreak: 0, maxStreak: calculateMaxStreak() };
   } else {
@@ -66,7 +79,7 @@ const stats = computed(() => {
   
   // Check backwards
   while (true) {
-    const status = logs.value[format(checkDate, 'yyyy-MM-dd')];
+    const status = logs.value[format(checkDate, 'yyyy-MM-dd')]?.status;
     if (status === true) {
       currentStreak++;
       checkDate = subDays(checkDate, 1);
@@ -86,7 +99,7 @@ const stats = computed(() => {
 
 const calculateMaxStreak = () => {
   const sortedDates = Object.keys(logs.value)
-    .filter(d => logs.value[d] === true)
+    .filter(d => logs.value[d]?.status === true)
     .sort();
   
   let maxStreak = 0;
@@ -121,7 +134,12 @@ const calculateMaxStreak = () => {
       <HabitHeader v-model="activityName" :current-date="currentDate" />
 
       <!-- Main Action -->
-      <DailyAction v-model="todayStatus" />
+      <DailyAction 
+        v-model:status="selectedStatus" 
+        v-model:note="selectedNote" 
+        :selected-date="selectedDate"
+        @return-to-today="selectDate(new Date())"
+      />
 
       <!-- Stats Grid -->
       <div class="grid grid-cols-2 gap-4">
@@ -132,7 +150,11 @@ const calculateMaxStreak = () => {
       </div>
 
       <!-- Calendar -->
-      <Calendar :logs="logs" />
+      <Calendar 
+        :logs="logs" 
+        :selected-date="selectedDate"
+        @date-selected="selectDate"
+      />
 
       <!-- Habit selector and name -->
     <div class="flex items-center justify-center gap-3 mb-2">
@@ -145,5 +167,3 @@ const calculateMaxStreak = () => {
     </div>
   </div>
 </template>
-
-
