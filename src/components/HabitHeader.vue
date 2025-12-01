@@ -11,7 +11,7 @@ const activityName = defineModel<string>({ required: true });
 </script>
 
 <template>
-  <header class="text-center space-y-2">
+  <header class="text-center space-y-2 mb-4">
     <input 
       v-model="activityName"
       type="text" 

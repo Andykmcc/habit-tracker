@@ -127,7 +127,7 @@ const calculateMaxStreak = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 text-gray-900 font-sans p-2 sm:p-4">
+  <div class="min-h-screen bg-gray-50 text-gray-900 font-sans p-2 py-4 sm:p-4">
     <div class="max-w-md mx-auto space-y-8">
       
       <!-- Header -->
@@ -157,9 +157,9 @@ const calculateMaxStreak = () => {
       />
 
       <!-- Habit selector and name -->
-    <div class="flex items-center justify-center gap-3 mb-2">
-      <HabitSelector />
-    </div>
+      <div class="flex items-center justify-center gap-3 mb-2">
+        <HabitSelector />
+      </div>
 
       <!-- Clear History Button -->
       <ClearButton @clear="store.clearAllLogs()" />
