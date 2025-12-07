@@ -1,6 +1,6 @@
 # Habit Tracker
 
-A simple, elegant, and privacy-focused habit tracker to help you build and maintain positive routines.
+A simple, privacy-focused habit tracker to help you track routines.
 
 ## User Experience
 
