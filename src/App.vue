@@ -11,16 +11,38 @@ import ClearButton from './components/ClearButton.vue';
 import HabitSelector from './components/HabitSelector.vue';
 import ExportData from './components/ExportData.vue';
 
+import OnboardingToast from './components/OnboardingToast.vue';
+
+// Check for new user BEFORE initializing store (which might create the key)
+// If the key is missing, it's a new user.
+const isNewUser = localStorage.getItem('habit-tracker-habits') === null;
+
 // Store
 const store = useHabitStore();
 const { logs } = storeToRefs(store);
+
+// Onboarding State
+const showOnboarding = ref(false);
 
 // Ensure a habit exists
 onMounted(() => {
   if (Object.keys(store.habits).length === 0) {
     store.createHabit('Daily Habit');
   }
+
+  // Check if we should show onboarding
+  const isDismissed = localStorage.getItem('habit-tracker-onboarding-dismissed') === 'true';
+  const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
+
+  if (isNewUser && !isDismissed && !isInstalled) {
+    showOnboarding.value = true;
+  }
 });
+
+const dismissOnboarding = () => {
+  showOnboarding.value = false;
+  localStorage.setItem('habit-tracker-onboarding-dismissed', 'true');
+};
 
 // Writable computed for activityName to work with v-model
 const activityName = computed({
@@ -167,6 +189,11 @@ const calculateMaxStreak = () => {
         <ExportData />
         <ClearButton @clear="store.clearAllLogs()" />
       </div>
+
+      <OnboardingToast 
+        :show="showOnboarding" 
+        @dismiss="dismissOnboarding" 
+      />
 
     </div>
   </div>
