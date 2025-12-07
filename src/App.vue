@@ -9,6 +9,7 @@ import DailyAction from './components/DailyAction.vue';
 import Calendar from './components/Calendar.vue';
 import ClearButton from './components/ClearButton.vue';
 import HabitSelector from './components/HabitSelector.vue';
+import ExportData from './components/ExportData.vue';
 
 // Store
 const store = useHabitStore();
@@ -162,7 +163,10 @@ const calculateMaxStreak = () => {
       </div>
 
       <!-- Clear History Button -->
-      <ClearButton @clear="store.clearAllLogs()" />
+      <div class="flex justify-center gap-4">
+        <ExportData />
+        <ClearButton @clear="store.clearAllLogs()" />
+      </div>
 
     </div>
   </div>

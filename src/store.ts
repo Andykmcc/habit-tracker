@@ -10,6 +10,13 @@ export interface DailyLog {
 
 export type DailyLogs = Record<string, DailyLog>; // date (YYYY-MM-DD) -> { status, note }
 
+export interface ExportEntry {
+    date: string;
+    habitName: string;
+    status: string;
+    note: string;
+}
+
 export interface Habit {
     id: string;
     name: string;
@@ -305,6 +312,39 @@ export const useHabitStore = defineStore('habit', () => {
         keysToDelete.forEach(k => localStorage.removeItem(k));
     };
 
+    const getAllLogs = (): ExportEntry[] => {
+        const allEntries: ExportEntry[] = [];
+
+        for (const habit of Object.values(habits.value)) {
+            // Scan localStorage for keys matching `habit:${habit.id}:*`
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(`habit:${habit.id}:`)) {
+                    try {
+                        const partitionLogs = JSON.parse(localStorage.getItem(key) || '{}') as DailyLogs;
+                        for (const [date, log] of Object.entries(partitionLogs)) {
+                            let statusStr = 'Skipped';
+                            if (log.status === true) statusStr = 'Completed';
+                            if (log.status === false) statusStr = 'Failed';
+
+                            allEntries.push({
+                                date,
+                                habitName: habit.name,
+                                status: statusStr,
+                                note: log.note || '',
+                            });
+                        }
+                    } catch (e) {
+                        console.error(`Failed to parse logs for key ${key}`, e);
+                    }
+                }
+            }
+        }
+
+        // Sort by date descending
+        return allEntries.sort((a, b) => b.date.localeCompare(a.date));
+    };
+
     return {
         // State
         habits,
@@ -321,5 +361,6 @@ export const useHabitStore = defineStore('habit', () => {
         upsertLog,
         setNote,
         clearAllLogs,
+        getAllLogs,
     };
 });
