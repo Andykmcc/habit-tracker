@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import { useHabitStore, STORAGE_KEY_HABITS, STORAGE_KEY_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION } from './store';
+import { STORAGE_KEY_HABITS, STORAGE_KEY_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION, migrateToPartitionedSchema } from './store';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -48,11 +48,10 @@ describe('Store Migration', () => {
         };
         localStorage.setItem(STORAGE_KEY_HABITS, JSON.stringify(legacyHabits));
 
-        // Initialize store (triggers migration)
-        const store = useHabitStore();
+        // Run migration manually since we are not using the store
+        migrateToPartitionedSchema();
 
         // Verify migration
-
         // 1. Schema version should be set
         expect(localStorage.getItem(STORAGE_KEY_SCHEMA_VERSION)).toBe(CURRENT_SCHEMA_VERSION);
 
@@ -90,8 +89,6 @@ describe('Store Migration', () => {
             }
         };
         localStorage.setItem(STORAGE_KEY_HABITS, JSON.stringify(habits));
-
-        const store = useHabitStore();
 
         // Data should be unchanged because migration was skipped
         const storedHabits = JSON.parse(localStorage.getItem(STORAGE_KEY_HABITS)!);

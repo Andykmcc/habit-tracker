@@ -58,7 +58,7 @@ function getPartitionKey(habitId: string, year: number, month: number): string {
 }
 
 // Migration function
-function migrateToPartitionedSchema(): void {
+export function migrateToPartitionedSchema(): void {
     const currentVersion = localStorage.getItem(STORAGE_KEY_SCHEMA_VERSION);
     if (currentVersion === CURRENT_SCHEMA_VERSION) return;
 
