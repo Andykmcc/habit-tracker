@@ -10,7 +10,7 @@
     "test": "vitest --run --coverage"
   },
   "dependencies": {
-    "@tailwindcss/postcss": "^4.1.17",
+    "@tailwindcss/postcss": "^4.1.18",
     "@vueuse/core": "^14.1.0",
     "autoprefixer": "^10.4.22",
     "date-fns": "^4.1.0",
