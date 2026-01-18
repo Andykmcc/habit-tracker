@@ -37,6 +37,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: jpb06/coverage-badges-action@latest
         with:
+          branches: '*'
           badges-icon: vitest
       - name: build app
         run: npm run build
