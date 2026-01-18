@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { format, subDays, parseISO } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { useHabitStore } from './store';
 import { storeToRefs } from 'pinia';
 import HabitHeader from './components/HabitHeader.vue';
@@ -83,7 +83,39 @@ const stats = computed(() => {
   const completedDays = trackedDays.filter(([_, log]) => log?.status === true).length;
   const successRate = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
-  // Current Streak
+  // Sort dates for streak calculations
+  const sortedDates = Object.keys(logs.value).sort();
+
+  // Helper to calculate average streak length for a specific status
+  const calculateAvgStreak = (targetStatus: boolean) => {
+    let streaks: number[] = [];
+    let currentCount = 0;
+
+    for (const dateStr of sortedDates) {
+      const status = logs.value[dateStr]?.status;
+      if (status === targetStatus) {
+        currentCount++;
+      } else {
+        if (currentCount > 0) {
+          streaks.push(currentCount);
+          currentCount = 0;
+        }
+      }
+    }
+    // Push the last streak if it exists
+    if (currentCount > 0) {
+      streaks.push(currentCount);
+    }
+
+    if (streaks.length === 0) return 0;
+    const sum = streaks.reduce((a, b) => a + b, 0);
+    return Math.round((sum / streaks.length) * 10) / 10; // Round to 1 decimal
+  };
+
+  const avgPositiveStreak = calculateAvgStreak(true);
+  const avgNegativeStreak = calculateAvgStreak(false);
+
+  // Current Positive Streak
   let currentStreak = 0;
   let checkDate = new Date();
   
@@ -94,7 +126,7 @@ const stats = computed(() => {
     checkDate = subDays(checkDate, 1);
   } else if (todayStatus === false) {
     // Today is explicitly failed, streak is 0
-    return { totalDays, successRate, currentStreak: 0, maxStreak: calculateMaxStreak() };
+    return { successRate, currentStreak: 0, avgPositiveStreak, avgNegativeStreak };
   } else {
     // Today is null, check yesterday
     checkDate = subDays(checkDate, 1);
@@ -113,40 +145,12 @@ const stats = computed(() => {
   }
 
   return {
-    totalDays,
     successRate,
     currentStreak,
-    maxStreak: calculateMaxStreak()
+    avgPositiveStreak,
+    avgNegativeStreak
   };
 });
-
-const calculateMaxStreak = () => {
-  const sortedDates = Object.keys(logs.value)
-    .filter(d => logs.value[d]?.status === true)
-    .sort();
-  
-  let maxStreak = 0;
-  let tempStreak = 0;
-  let lastDate: Date | null = null;
-
-  for (const dateStr of sortedDates) {
-    const d = parseISO(dateStr);
-    if (!lastDate) {
-      tempStreak = 1;
-    } else {
-      const diff = (d.getTime() - lastDate.getTime()) / (1000 * 3600 * 24);
-      if (diff === 1) {
-        tempStreak++;
-      } else {
-        tempStreak = 1;
-      }
-    }
-    if (tempStreak > maxStreak) maxStreak = tempStreak;
-    lastDate = d;
-  }
-  return maxStreak;
-};
-
 </script>
 
 <template>
@@ -167,8 +171,8 @@ const calculateMaxStreak = () => {
       <!-- Stats Grid -->
       <div class="grid grid-cols-2 gap-4">
         <StatCard name="Current Streak" :value="stats.currentStreak" />
-        <StatCard name="Best Streak" :value="stats.maxStreak" />
-        <StatCard name="Total Days" :value="stats.totalDays" />
+        <StatCard name="Avg Positive Streak" :value="stats.avgPositiveStreak" />
+        <StatCard name="Avg Negative Streak" :value="stats.avgNegativeStreak" />
         <StatCard name="Success Rate" :value="`${stats.successRate}%`" />
       </div>
 
