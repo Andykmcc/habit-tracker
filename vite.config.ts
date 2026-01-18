@@ -35,6 +35,7 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     coverage: {
+      reporter: ['json-summary'],
       provider: 'v8',
       include: ['src/**/*.{ts,tsx,vue}'],
       exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts'],

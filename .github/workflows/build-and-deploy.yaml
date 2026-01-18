@@ -32,6 +32,11 @@ jobs:
         run: npm i
       - name: run tests
         run: npm run test
+      - name: ⚙️ Generating coverage badges
+        uses: jpb06/coverage-badges-action@latest
+        with:
+          branches: main
+          badges-icon: vitest
       - name: build app
         run: npm run build
       - name: Setup Pages
