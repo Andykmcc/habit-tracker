@@ -27,6 +27,8 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Runs a single command using the runners shell
       - name: install dependencies
@@ -34,7 +36,7 @@ jobs:
       - name: run tests
         run: npm run test
       - name: ⚙️ Generating coverage badges
-        if: github.ref_name != 'main'
+        if: github.event_name == 'pull_request'
         uses: jpb06/coverage-badges-action@latest
         with:
           branches: '*'
