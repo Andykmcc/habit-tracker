@@ -28,13 +28,7 @@ export interface Habit {
 // Constants
 export const STORAGE_KEY_HABITS = 'habit-tracker-habits';
 export const STORAGE_KEY_ACTIVE_HABIT = 'habit-tracker-active-habit-id';
-export const STORAGE_KEY_MIGRATED = 'habit-tracker-migrated';
-export const STORAGE_KEY_SCHEMA_VERSION = 'habit-tracker-schema-version';
-export const CURRENT_SCHEMA_VERSION = 'v1';
 
-// Old storage keys (for migration)
-const OLD_STORAGE_KEY_LOGS = 'habit-tracker-logs';
-const OLD_STORAGE_KEY_ACTIVITY = 'habit-tracker-activity-name';
 const DEFAULT_ACTIVITY_NAME = 'Daily Habit';
 
 // Helper: Generate unique ID
@@ -42,20 +36,7 @@ function generateId(): string {
     return `habit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Helper: Migrate logs from old format (boolean | null) to new format ({ status, note })
-function migrateLogs(logs: any): DailyLogs {
-    const migratedLogs: DailyLogs = {};
-    for (const [date, value] of Object.entries(logs)) {
-        // If value is already an object with status, keep it
-        if (typeof value === 'object' && value !== null && 'status' in value) {
-            migratedLogs[date] = value as DailyLog;
-        } else {
-            // Convert boolean/null to new format
-            migratedLogs[date] = { status: value as boolean | null };
-        }
-    }
-    return migratedLogs;
-}
+
 
 // Helper: Get partition key
 function getPartitionKey(habitId: string, year: number, month: number): string {
@@ -64,89 +45,13 @@ function getPartitionKey(habitId: string, year: number, month: number): string {
     return `habit:${habitId}:${year}:${monthStr}`;
 }
 
-// Migration function
-export function migrateToPartitionedSchema(): void {
-    const currentVersion = localStorage.getItem(STORAGE_KEY_SCHEMA_VERSION);
-    if (currentVersion === CURRENT_SCHEMA_VERSION) return;
 
-    // 1. Handle legacy single-habit migration first (if needed)
-    const migratedLegacy = localStorage.getItem(STORAGE_KEY_MIGRATED);
-    if (migratedLegacy !== 'true') {
-        const oldLogsStr = localStorage.getItem(OLD_STORAGE_KEY_LOGS);
-        const oldName = localStorage.getItem(OLD_STORAGE_KEY_ACTIVITY);
-        if (oldLogsStr || oldName) {
-            const habitId = generateId();
-            const oldLogs = oldLogsStr ? JSON.parse(oldLogsStr) : {};
-            const habit = {
-                id: habitId,
-                name: oldName || DEFAULT_ACTIVITY_NAME,
-                logs: migrateLogs(oldLogs),
-                createdAt: new Date().toISOString(),
-            };
-            // Save temporarily to habits key, will be partitioned in step 2
-            const habits = { [habitId]: habit };
-            localStorage.setItem(STORAGE_KEY_HABITS, JSON.stringify(habits));
-            localStorage.setItem(STORAGE_KEY_ACTIVE_HABIT, habitId);
-            localStorage.removeItem(OLD_STORAGE_KEY_LOGS);
-            localStorage.removeItem(OLD_STORAGE_KEY_ACTIVITY);
-            localStorage.setItem(STORAGE_KEY_MIGRATED, 'true');
-        }
-    }
-
-    // 2. Migrate from Monolithic Habit (with logs) to Partitioned
-    const habitsStr = localStorage.getItem(STORAGE_KEY_HABITS);
-    if (habitsStr) {
-        const habits = JSON.parse(habitsStr);
-        let hasChanges = false;
-
-        for (const habitId in habits) {
-            const habit = habits[habitId];
-            if (habit.logs) {
-                hasChanges = true;
-                const logs = habit.logs as DailyLogs;
-
-                // Group by Year-Month
-                const partitions: Record<string, DailyLogs> = {};
-
-                for (const [date, log] of Object.entries(logs)) {
-                    const parts = date.split('-');
-                    if (parts.length < 2) continue;
-                    const year = parseInt(parts[0]!);
-                    const month = parseInt(parts[1]!);
-                    const key = getPartitionKey(habitId, year, month);
-
-                    if (!partitions[key]) {
-                        // Load existing if any
-                        const existing = localStorage.getItem(key);
-                        partitions[key] = existing ? JSON.parse(existing) : {};
-                    }
-                    partitions[key]![date] = log;
-                }
-
-                // Write partitions
-                for (const [key, partitionLogs] of Object.entries(partitions)) {
-                    localStorage.setItem(key, JSON.stringify(partitionLogs));
-                }
-
-                // Remove logs from habit object
-                delete habit.logs;
-            }
-        }
-
-        if (hasChanges) {
-            localStorage.setItem(STORAGE_KEY_HABITS, JSON.stringify(habits));
-        }
-    }
-
-    localStorage.setItem(STORAGE_KEY_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION);
-}
 
 // Run migration before creating store
 // migrateToPartitionedSchema(); // MOVED INSIDE defineStore
 
 export const useHabitStore = defineStore('habit', () => {
-    // Run migration on store initialization
-    migrateToPartitionedSchema();
+
 
     // State
     const habits = useLocalStorage<Record<string, Habit>>(STORAGE_KEY_HABITS, {});
