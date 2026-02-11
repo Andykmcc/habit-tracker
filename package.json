@@ -20,7 +20,7 @@
     "vue": "^3.5.28"
   },
   "devDependencies": {
-    "@types/node": "^24.10.12",
+    "@types/node": "^24.10.13",
     "@vitejs/plugin-vue": "^6.0.4",
     "@vitest/coverage-v8": "^4.0.18",
     "@vue/test-utils": "^2.4.6",
