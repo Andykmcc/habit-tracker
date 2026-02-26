@@ -12,7 +12,7 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.1",
     "@vueuse/core": "^14.2.1",
-    "autoprefixer": "^10.4.24",
+    "autoprefixer": "^10.4.27",
     "date-fns": "^4.1.0",
     "pinia": "^3.0.4",
     "postcss": "^8.5.6",
