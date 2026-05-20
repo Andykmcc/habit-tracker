@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { format, subDays } from 'date-fns';
 import { useHabitStore } from './store';
 import { storeToRefs } from 'pinia';
@@ -37,6 +37,19 @@ onMounted(() => {
   if (isNewUser && !isDismissed && !isInstalled) {
     showOnboarding.value = true;
   }
+
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      const now = new Date();
+      currentDate.value = now;
+      selectedDate.value = now;
+    }
+  };
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  onUnmounted(() => {
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  });
 });
 
 const dismissOnboarding = () => {
