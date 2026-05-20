@@ -138,4 +138,37 @@ describe('App', () => {
             expect(stats.currentStreak).toBe(0); // broken by today's failure
         });
     });
+
+    describe('visibilitychange event', () => {
+        it('should update currentDate and selectedDate to today when becoming visible', () => {
+            const pinia = createPinia();
+            setActivePinia(pinia);
+            
+            const wrapper = mount(App, {
+                global: { plugins: [pinia] }
+            });
+            
+            const vm = wrapper.vm as any;
+            
+            // Set dates to some past date
+            const pastDate = new Date('2024-01-01');
+            vm.currentDate = pastDate;
+            vm.selectedDate = pastDate;
+            
+            // Trigger visibilitychange
+            Object.defineProperty(document, 'visibilityState', {
+                value: 'visible',
+                writable: true,
+                configurable: true
+            });
+            document.dispatchEvent(new Event('visibilitychange'));
+            
+            // Should be today
+            const today = new Date();
+            expect(format(vm.currentDate, 'yyyy-MM-dd')).toBe(format(today, 'yyyy-MM-dd'));
+            expect(format(vm.selectedDate, 'yyyy-MM-dd')).toBe(format(today, 'yyyy-MM-dd'));
+
+            wrapper.unmount();
+        });
+    });
 });
