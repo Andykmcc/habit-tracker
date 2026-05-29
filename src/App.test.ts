@@ -137,6 +137,62 @@ describe('App', () => {
             expect(stats.successRate).toBe(67); // 2/3 * 100 rounded
             expect(stats.currentStreak).toBe(0); // broken by today's failure
         });
+
+        it('should calculate recentSuccessRate over the rolling 90-day window', () => {
+            const pinia = createPinia();
+            setActivePinia(pinia);
+            const store = useHabitStore();
+            store.createHabit('Test Habit');
+
+            const ninetyOneDaysAgoStr = format(subDays(today, 91), 'yyyy-MM-dd');
+            const ninetyDaysAgoStr = format(subDays(today, 90), 'yyyy-MM-dd');
+
+            // Outside window (91 days ago): success — must be EXCLUDED from recent
+            store.upsertLog(ninetyOneDaysAgoStr, true);
+            // Inside window boundary (exactly 90 days ago): fail — must be INCLUDED
+            store.upsertLog(ninetyDaysAgoStr, false);
+            // Inside window (today): success
+            store.upsertLog(todayStr, true);
+
+            const wrapper = mount(App, { global: { plugins: [pinia] } });
+            const stats = (wrapper.vm as any).stats;
+
+            // All-time: 3 tracked, 2 success => 67
+            expect(stats.successRate).toBe(67);
+            // Recent: 2 tracked in-window (90-ago fail + today success), 1 success => 50
+            expect(stats.recentSuccessRate).toBe(50);
+        });
+
+        it('should return null recentSuccessRate when no tracked days fall in the window', () => {
+            const pinia = createPinia();
+            setActivePinia(pinia);
+            const store = useHabitStore();
+            store.createHabit('Test Habit');
+
+            const hundredDaysAgoStr = format(subDays(today, 100), 'yyyy-MM-dd');
+            // Only tracked day is outside the window
+            store.upsertLog(hundredDaysAgoStr, true);
+            // A recent day exists but is skipped (null) => not tracked
+            store.upsertLog(todayStr, null);
+
+            const wrapper = mount(App, { global: { plugins: [pinia] } });
+            const stats = (wrapper.vm as any).stats;
+
+            expect(stats.recentSuccessRate).toBeNull();
+        });
+
+        it('should return null recentSuccessRate for empty logs', () => {
+            const pinia = createPinia();
+            setActivePinia(pinia);
+            const store = useHabitStore();
+            store.createHabit('Test Habit');
+
+            const wrapper = mount(App, { global: { plugins: [pinia] } });
+            const stats = (wrapper.vm as any).stats;
+
+            expect(stats.successRate).toBe(0);
+            expect(stats.recentSuccessRate).toBeNull();
+        });
     });
 
     describe('visibilitychange event', () => {

@@ -96,6 +96,14 @@ const stats = computed(() => {
   const completedDays = trackedDays.filter(([_, log]) => log?.status === true).length;
   const successRate = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
+  // Rolling 90-day window (inclusive). Date keys are yyyy-MM-dd, so string compare is valid.
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const cutoffStr = format(subDays(new Date(), 90), 'yyyy-MM-dd');
+  const recentTracked = trackedDays.filter(([date]) => date >= cutoffStr && date <= todayStr);
+  const recentTotal = recentTracked.length;
+  const recentCompleted = recentTracked.filter(([_, log]) => log?.status === true).length;
+  const recentSuccessRate = recentTotal > 0 ? Math.round((recentCompleted / recentTotal) * 100) : null;
+
   // Sort dates for streak calculations
   const sortedDates = Object.keys(logs.value).sort();
 
@@ -139,7 +147,7 @@ const stats = computed(() => {
     checkDate = subDays(checkDate, 1);
   } else if (todayStatus === false) {
     // Today is explicitly failed, streak is 0
-    return { successRate, currentStreak: 0, avgPositiveStreak, avgNegativeStreak };
+    return { successRate, recentSuccessRate, currentStreak: 0, avgPositiveStreak, avgNegativeStreak };
   } else {
     // Today is null, check yesterday
     checkDate = subDays(checkDate, 1);
@@ -159,6 +167,7 @@ const stats = computed(() => {
 
   return {
     successRate,
+    recentSuccessRate,
     currentStreak,
     avgPositiveStreak,
     avgNegativeStreak
