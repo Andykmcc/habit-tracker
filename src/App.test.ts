@@ -153,6 +153,9 @@ describe('App', () => {
 
             expect(stats.successRate).toBe(67); // 2/3 * 100 rounded
             expect(stats.currentStreak).toBe(0); // broken by today's failure
+            // Today is a fail, so stats takes the early-return branch; recentSuccessRate
+            // must still be returned there. All 3 tracked days are in-window: 2/3 -> 67.
+            expect(stats.recentSuccessRate).toBe(67);
         });
 
         it('should calculate recentSuccessRate over the rolling 90-day window', () => {
