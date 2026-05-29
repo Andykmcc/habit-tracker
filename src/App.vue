@@ -5,6 +5,7 @@ import { useHabitStore } from './store';
 import { storeToRefs } from 'pinia';
 import HabitHeader from './components/HabitHeader.vue';
 import StatCard from './components/StatCard.vue';
+import SuccessRateWidget from './components/SuccessRateWidget.vue';
 import DailyAction from './components/DailyAction.vue';
 import Calendar from './components/Calendar.vue';
 import ClearButton from './components/ClearButton.vue';
@@ -96,6 +97,14 @@ const stats = computed(() => {
   const completedDays = trackedDays.filter(([_, log]) => log?.status === true).length;
   const successRate = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
+  // Rolling 90-day window (inclusive). Date keys are yyyy-MM-dd, so string compare is valid.
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const cutoffStr = format(subDays(new Date(), 90), 'yyyy-MM-dd');
+  const recentTracked = trackedDays.filter(([date]) => date >= cutoffStr && date <= todayStr);
+  const recentTotal = recentTracked.length;
+  const recentCompleted = recentTracked.filter(([_, log]) => log?.status === true).length;
+  const recentSuccessRate = recentTotal > 0 ? Math.round((recentCompleted / recentTotal) * 100) : null;
+
   // Sort dates for streak calculations
   const sortedDates = Object.keys(logs.value).sort();
 
@@ -139,7 +148,7 @@ const stats = computed(() => {
     checkDate = subDays(checkDate, 1);
   } else if (todayStatus === false) {
     // Today is explicitly failed, streak is 0
-    return { successRate, currentStreak: 0, avgPositiveStreak, avgNegativeStreak };
+    return { successRate, recentSuccessRate, currentStreak: 0, avgPositiveStreak, avgNegativeStreak };
   } else {
     // Today is null, check yesterday
     checkDate = subDays(checkDate, 1);
@@ -159,6 +168,7 @@ const stats = computed(() => {
 
   return {
     successRate,
+    recentSuccessRate,
     currentStreak,
     avgPositiveStreak,
     avgNegativeStreak
@@ -181,6 +191,19 @@ const stats = computed(() => {
         @return-to-today="selectDate(new Date())"
       />
 
+      <!-- Success Rate Widget -->
+      <SuccessRateWidget
+        :all-time-rate="stats.successRate"
+        :recent-rate="stats.recentSuccessRate"
+      />
+
+      <!-- Calendar -->
+      <Calendar
+        :logs="logs"
+        :selected-date="selectedDate"
+        @date-selected="selectDate"
+      />
+
       <!-- Stats Grid -->
       <div class="grid grid-cols-2 gap-4">
         <StatCard name="Current Streak" :value="stats.currentStreak" />
@@ -188,13 +211,6 @@ const stats = computed(() => {
         <StatCard name="Avg Negative Streak" :value="stats.avgNegativeStreak" />
         <StatCard name="Success Rate" :value="`${stats.successRate}%`" />
       </div>
-
-      <!-- Calendar -->
-      <Calendar 
-        :logs="logs" 
-        :selected-date="selectedDate"
-        @date-selected="selectDate"
-      />
 
       <!-- Habit selector and name -->
       <div class="flex items-center justify-center gap-3 mb-2">

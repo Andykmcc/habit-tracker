@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { format, subDays } from 'date-fns';
 import App from './App.vue';
+import SuccessRateWidget from './components/SuccessRateWidget.vue';
 import { useHabitStore } from './store';
 
 describe('App', () => {
@@ -17,6 +18,22 @@ describe('App', () => {
             }
         });
         expect(wrapper.exists()).toBe(true);
+    });
+
+    it('renders the SuccessRateWidget wired to stats', () => {
+        const pinia = createPinia();
+        setActivePinia(pinia);
+        const store = useHabitStore();
+        store.createHabit('Test Habit');
+        store.upsertLog(format(new Date(), 'yyyy-MM-dd'), true);
+
+        const wrapper = mount(App, { global: { plugins: [pinia] } });
+        const widget = wrapper.findComponent(SuccessRateWidget);
+
+        expect(widget.exists()).toBe(true);
+        // One tracked success today => both all-time and recent are 100
+        expect(widget.props('allTimeRate')).toBe(100);
+        expect(widget.props('recentRate')).toBe(100);
     });
 
     describe('stats computed - new metrics', () => {
@@ -136,6 +153,65 @@ describe('App', () => {
 
             expect(stats.successRate).toBe(67); // 2/3 * 100 rounded
             expect(stats.currentStreak).toBe(0); // broken by today's failure
+            // Today is a fail, so stats takes the early-return branch; recentSuccessRate
+            // must still be returned there. All 3 tracked days are in-window: 2/3 -> 67.
+            expect(stats.recentSuccessRate).toBe(67);
+        });
+
+        it('should calculate recentSuccessRate over the rolling 90-day window', () => {
+            const pinia = createPinia();
+            setActivePinia(pinia);
+            const store = useHabitStore();
+            store.createHabit('Test Habit');
+
+            const ninetyOneDaysAgoStr = format(subDays(today, 91), 'yyyy-MM-dd');
+            const ninetyDaysAgoStr = format(subDays(today, 90), 'yyyy-MM-dd');
+
+            // Outside window (91 days ago): success — must be EXCLUDED from recent
+            store.upsertLog(ninetyOneDaysAgoStr, true);
+            // Inside window boundary (exactly 90 days ago): fail — must be INCLUDED
+            store.upsertLog(ninetyDaysAgoStr, false);
+            // Inside window (today): success
+            store.upsertLog(todayStr, true);
+
+            const wrapper = mount(App, { global: { plugins: [pinia] } });
+            const stats = (wrapper.vm as any).stats;
+
+            // All-time: 3 tracked, 2 success => 67
+            expect(stats.successRate).toBe(67);
+            // Recent: 2 tracked in-window (90-ago fail + today success), 1 success => 50
+            expect(stats.recentSuccessRate).toBe(50);
+        });
+
+        it('should return null recentSuccessRate when no tracked days fall in the window', () => {
+            const pinia = createPinia();
+            setActivePinia(pinia);
+            const store = useHabitStore();
+            store.createHabit('Test Habit');
+
+            const hundredDaysAgoStr = format(subDays(today, 100), 'yyyy-MM-dd');
+            // Only tracked day is outside the window
+            store.upsertLog(hundredDaysAgoStr, true);
+            // A recent day exists but is skipped (null) => not tracked
+            store.upsertLog(todayStr, null);
+
+            const wrapper = mount(App, { global: { plugins: [pinia] } });
+            const stats = (wrapper.vm as any).stats;
+
+            expect(stats.recentSuccessRate).toBeNull();
+        });
+
+        it('should return null recentSuccessRate for empty logs', () => {
+            const pinia = createPinia();
+            setActivePinia(pinia);
+            const store = useHabitStore();
+            store.createHabit('Test Habit');
+
+            const wrapper = mount(App, { global: { plugins: [pinia] } });
+            const stats = (wrapper.vm as any).stats;
+
+            expect(stats.successRate).toBe(0);
+            expect(stats.recentSuccessRate).toBeNull();
         });
     });
 
