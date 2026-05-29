@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { format, subDays } from 'date-fns';
 import App from './App.vue';
+import SuccessRateWidget from './components/SuccessRateWidget.vue';
 import { useHabitStore } from './store';
 
 describe('App', () => {
@@ -17,6 +18,22 @@ describe('App', () => {
             }
         });
         expect(wrapper.exists()).toBe(true);
+    });
+
+    it('renders the SuccessRateWidget wired to stats', () => {
+        const pinia = createPinia();
+        setActivePinia(pinia);
+        const store = useHabitStore();
+        store.createHabit('Test Habit');
+        store.upsertLog(format(new Date(), 'yyyy-MM-dd'), true);
+
+        const wrapper = mount(App, { global: { plugins: [pinia] } });
+        const widget = wrapper.findComponent(SuccessRateWidget);
+
+        expect(widget.exists()).toBe(true);
+        // One tracked success today => both all-time and recent are 100
+        expect(widget.props('allTimeRate')).toBe(100);
+        expect(widget.props('recentRate')).toBe(100);
     });
 
     describe('stats computed - new metrics', () => {

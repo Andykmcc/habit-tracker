@@ -5,6 +5,7 @@ import { useHabitStore } from './store';
 import { storeToRefs } from 'pinia';
 import HabitHeader from './components/HabitHeader.vue';
 import StatCard from './components/StatCard.vue';
+import SuccessRateWidget from './components/SuccessRateWidget.vue';
 import DailyAction from './components/DailyAction.vue';
 import Calendar from './components/Calendar.vue';
 import ClearButton from './components/ClearButton.vue';
@@ -190,6 +191,19 @@ const stats = computed(() => {
         @return-to-today="selectDate(new Date())"
       />
 
+      <!-- Success Rate Widget -->
+      <SuccessRateWidget
+        :all-time-rate="stats.successRate"
+        :recent-rate="stats.recentSuccessRate"
+      />
+
+      <!-- Calendar -->
+      <Calendar
+        :logs="logs"
+        :selected-date="selectedDate"
+        @date-selected="selectDate"
+      />
+
       <!-- Stats Grid -->
       <div class="grid grid-cols-2 gap-4">
         <StatCard name="Current Streak" :value="stats.currentStreak" />
@@ -197,13 +211,6 @@ const stats = computed(() => {
         <StatCard name="Avg Negative Streak" :value="stats.avgNegativeStreak" />
         <StatCard name="Success Rate" :value="`${stats.successRate}%`" />
       </div>
-
-      <!-- Calendar -->
-      <Calendar 
-        :logs="logs" 
-        :selected-date="selectedDate"
-        @date-selected="selectDate"
-      />
 
       <!-- Habit selector and name -->
       <div class="flex items-center justify-center gap-3 mb-2">
