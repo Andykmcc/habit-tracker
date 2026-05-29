@@ -5,10 +5,16 @@
 
 ## Goal
 
-Replace the standalone "Success Rate" stat card with a dedicated **Success Rate
-comparison widget** that shows the user's all-time success rate alongside their
-**last-90-days** success rate, plus a delta indicating whether recent
-performance is up or down versus their all-time baseline.
+Add a dedicated **Success Rate comparison widget** that shows the user's
+all-time success rate alongside their **last-90-days** success rate, plus a delta
+indicating whether recent performance is up or down versus their all-time
+baseline.
+
+The existing stats grid (Current Streak, Avg Positive Streak, Avg Negative
+Streak, Success Rate) is **kept intact** and moved **below the calendar**. The
+new comparison widget takes the grid's former spot **above the calendar**. The
+all-time success rate therefore appears in both places — this is acceptable and
+intended.
 
 A predictive "probability tomorrow is a negative day" feature was considered and
 **explicitly dropped** from scope.
@@ -78,15 +84,25 @@ New file: `src/components/SuccessRateWidget.vue`
 
 ## App.vue integration
 
+The vertical section order changes as follows (within the existing
+`max-w-md` column):
+
+| Before | After |
+| --- | --- |
+| HabitHeader | HabitHeader |
+| DailyAction | DailyAction |
+| **Stats grid (2×2)** | **SuccessRateWidget** (new) |
+| Calendar | Calendar |
+| HabitSelector | **Stats grid (2×2)** (moved) |
+| Export / Clear | HabitSelector |
+| | Export / Clear |
+
 - Render `<SuccessRateWidget :all-time-rate="stats.successRate"
-  :recent-rate="stats.recentSuccessRate" />` as a full-width section, placed
-  **above** the streak grid.
-- **Remove** the existing `<StatCard name="Success Rate" ... />` from the 2×2
-  grid so the all-time rate is not duplicated.
-- The remaining three streak cards (Current Streak, Avg Positive Streak, Avg
-  Negative Streak) stay in the `grid grid-cols-2` layout, producing a 2 + 1
-  arrangement. This minor cosmetic gap is accepted for now; switching the streak
-  grid to `grid-cols-3` is a trivial follow-up if desired.
+  :recent-rate="stats.recentSuccessRate" />` as a full-width section **above the
+  calendar**, where the stats grid used to be.
+- **Keep** the existing 2×2 stats grid exactly as-is — all four cards, including
+  the `Success Rate` card — and move that whole block to **below the calendar**.
+- No changes to the grid's internal layout or to the streak cards.
 
 ## Edge cases
 
@@ -120,4 +136,5 @@ Follow the existing vitest + `@vue/test-utils` patterns.
 
 - Predictive "probability tomorrow is negative" feature (dropped).
 - Changing the all-time card's `0%`-on-no-data behavior.
-- Restructuring the streak grid beyond removing the Success Rate card.
+- Any change to the contents or internal layout of the existing stats grid
+  (it is moved, not modified).
