@@ -107,8 +107,8 @@ describe('ExportData.vue', () => {
         const content = await blob.text();
 
         // Basic check to ensure content is generated
-        expect(content).toContain('Date,Habit Name,Status,Note');
-        expect(content).toContain('2025-01-01,Test Habit,Completed,Note');
+        expect(content).toContain('Date,Habit Name,Status,Label,Note');
+        expect(content).toContain('2025-01-01,Test Habit,Completed,✓,Note');
 
         expect(appendChildMock).toHaveBeenCalled();
         expect(clickMock).toHaveBeenCalled();

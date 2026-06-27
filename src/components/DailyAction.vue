@@ -7,9 +7,14 @@ const status = defineModel<boolean | null>('status', { required: true });
 const note = defineModel<string>('note', { default: '' });
 
 // Props
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   selectedDate: Date;
-}>();
+  positiveLabel?: string;
+  negativeLabel?: string;
+}>(), {
+  positiveLabel: '✓',
+  negativeLabel: '✕',
+});
 
 // Emits
 const emit = defineEmits<{
@@ -43,7 +48,7 @@ const dateLabel = computed(() => {
         class="rounded-full flex items-center justify-center text-5xl transition-all duration-300 focus:outline-none border-4 w-32 h-32 daily-action-negative-btn"
         :class="status === false ? 'bg-red-500 text-white border-red-200 hover:bg-red-600' : 'bg-gray-100 text-gray-400 border-gray-100 hover:bg-gray-200'"
       >
-        <span>✕</span>
+        <span>{{ negativeLabel }}</span>
       </button>
 
       <!-- Positive Button -->
@@ -52,7 +57,7 @@ const dateLabel = computed(() => {
         class="rounded-full flex items-center justify-center text-5xl transition-all duration-300 focus:outline-none border-4 w-32 h-32 daily-action-positive-btn"
         :class="status === true ? 'bg-cyan-500 text-white border-cyan-200 hover:bg-cyan-600' : 'bg-gray-100 text-gray-400 border-gray-100 hover:bg-gray-200'"
       >
-        <span>✓</span>
+        <span>{{ positiveLabel }}</span>
       </button>
     </div>
   
