@@ -2,7 +2,7 @@ import type { ExportEntry } from '../store';
 
 export const generateCsvContent = (logs: ExportEntry[]): string => {
     // CSV Header
-    const headers = ['Date', 'Habit Name', 'Status', 'Note'];
+    const headers = ['Date', 'Habit Name', 'Status', 'Label', 'Note'];
 
     const rows = logs.map(log => {
         // Escape quotes and wrap in quotes if necessary
@@ -17,6 +17,7 @@ export const generateCsvContent = (logs: ExportEntry[]): string => {
             escape(log.date),
             escape(log.habitName),
             escape(log.status),
+            escape(log.label),
             escape(log.note)
         ].join(',');
     });

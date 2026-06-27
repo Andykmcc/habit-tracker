@@ -8,6 +8,16 @@ const store = useHabitStore();
 const habitsList = computed(() => Object.values(store.habits));
 const hasHabits = computed(() => habitsList.value.length > 0);
 
+const customPositive = computed({
+  get: () => store.activeHabit?.positiveLabel || '',
+  set: (val: string) => store.setCustomLabels(val, store.activeHabit?.negativeLabel || '')
+});
+
+const customNegative = computed({
+  get: () => store.activeHabit?.negativeLabel || '',
+  set: (val: string) => store.setCustomLabels(store.activeHabit?.positiveLabel || '', val)
+});
+
 // State
 const showDropdown = ref(false);
 const newHabitName = ref('');
@@ -100,6 +110,31 @@ const toggleDropdown = () => {
 
       <!-- Divider -->
       <div class="border-t border-gray-200"></div>
+
+      <!-- Active Habit Settings -->
+      <div class="px-4 py-3 bg-gray-50 border-b border-gray-200" v-if="store.activeHabit">
+        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Custom Labels</div>
+        <div class="flex items-center gap-3">
+          <div class="flex-1">
+            <label class="text-[10px] text-gray-500 block mb-1">Negative</label>
+            <input 
+              v-model="customNegative"
+              class="w-full px-2 py-1 text-center text-sm border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 outline-none"
+              placeholder="✕"
+              maxlength="4"
+            />
+          </div>
+          <div class="flex-1">
+            <label class="text-[10px] text-gray-500 block mb-1">Positive</label>
+            <input 
+              v-model="customPositive"
+              class="w-full px-2 py-1 text-center text-sm border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 outline-none"
+              placeholder="✓"
+              maxlength="4"
+            />
+          </div>
+        </div>
+      </div>
 
       <!-- New habit form -->
       <div v-if="showNewHabitForm" class="p-3">

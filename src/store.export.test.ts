@@ -60,6 +60,7 @@ describe('Export Data', () => {
             date: '2025-02-01',
             habitName: 'Habit 2',
             status: 'Skipped',
+            label: '',
             note: 'Skipped month'
         });
 
@@ -68,6 +69,7 @@ describe('Export Data', () => {
             date: '2025-01-02',
             habitName: 'Habit 1',
             status: 'Failed',
+            label: '✕',
             note: ''
         });
 
@@ -80,6 +82,7 @@ describe('Export Data', () => {
             date: '2025-01-01',
             habitName: 'Habit 1',
             status: 'Completed',
+            label: '✓',
             note: 'Start of year'
         });
 
@@ -88,6 +91,7 @@ describe('Export Data', () => {
             date: '2025-01-01',
             habitName: 'Habit 2',
             status: 'Completed',
+            label: '✓',
             note: ''
         });
     });

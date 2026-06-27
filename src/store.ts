@@ -14,6 +14,7 @@ export interface ExportEntry {
     date: string;
     habitName: string;
     status: string;
+    label: string;
     note: string;
 }
 
@@ -23,6 +24,8 @@ export interface Habit {
     // logs are no longer stored here in the main object
     createdAt: string;
     color?: string;
+    positiveLabel?: string;
+    negativeLabel?: string;
 }
 
 // Constants
@@ -163,6 +166,19 @@ export const useHabitStore = defineStore('habit', () => {
         };
     };
 
+    const setCustomLabels = (positiveLabel: string, negativeLabel: string): void => {
+        if (!activeHabit.value) return;
+
+        habits.value = {
+            ...habits.value,
+            [activeHabit.value.id]: {
+                ...activeHabit.value,
+                positiveLabel: positiveLabel || undefined,
+                negativeLabel: negativeLabel || undefined,
+            },
+        };
+    };
+
     const updateLog = (date: string, updateFn: (existing: DailyLog) => DailyLog) => {
         if (!activeHabit.value) return;
         const habitId = activeHabit.value.id;
@@ -229,13 +245,21 @@ export const useHabitStore = defineStore('habit', () => {
                         const partitionLogs = JSON.parse(localStorage.getItem(key) || '{}') as DailyLogs;
                         for (const [date, log] of Object.entries(partitionLogs)) {
                             let statusStr = 'Skipped';
-                            if (log.status === true) statusStr = 'Completed';
-                            if (log.status === false) statusStr = 'Failed';
+                            let labelStr = '';
+                            if (log.status === true) {
+                                statusStr = 'Completed';
+                                labelStr = habit.positiveLabel || '✓';
+                            }
+                            if (log.status === false) {
+                                statusStr = 'Failed';
+                                labelStr = habit.negativeLabel || '✕';
+                            }
 
                             allEntries.push({
                                 date,
                                 habitName: habit.name,
                                 status: statusStr,
+                                label: labelStr,
                                 note: log.note || '',
                             });
                         }
@@ -263,6 +287,7 @@ export const useHabitStore = defineStore('habit', () => {
         deleteHabit,
         setActiveHabit,
         setActivityName,
+        setCustomLabels,
         upsertLog,
         setNote,
         clearAllLogs,

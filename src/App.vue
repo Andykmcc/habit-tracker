@@ -188,6 +188,8 @@ const stats = computed(() => {
         v-model:status="selectedStatus" 
         v-model:note="selectedNote" 
         :selected-date="selectedDate"
+        :positive-label="store.activeHabit?.positiveLabel"
+        :negative-label="store.activeHabit?.negativeLabel"
         @return-to-today="selectDate(new Date())"
       />
 
