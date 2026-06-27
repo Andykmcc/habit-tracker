@@ -149,16 +149,18 @@ Mapping to the user's words: "imported overwrites local" = `conflictWinner:
 'imported'`; "local wins" = `conflictWinner: 'local'`; "zero out" =
 `mirror: true`.
 
-**Change summary** (drives the preview and is asserted in tests):
+**Change summary** — all counts are **changes relative to local state** (what the
+user is about to gain or lose), so under local-wins a conflict that keeps the
+local value counts as **no change**. Drives the preview and is asserted in tests:
 
 ```ts
 interface ImportSummary {
-  habitsAdded: number;
-  habitsUpdated: number;   // metadata changed by the merge
-  habitsDeleted: number;   // mirror only
-  logsAdded: number;
-  logsOverwritten: number; // conflict resolved to a different value
-  logsDeleted: number;     // mirror only
+  habitsAdded: number;     // in import, not local
+  habitsUpdated: number;   // metadata that ends up different from local
+  habitsDeleted: number;   // mirror only: local habit not in import
+  logsAdded: number;       // (habitId, date) in import, not local
+  logsOverwritten: number; // conflict where the resolved value differs from local
+  logsDeleted: number;     // mirror only: local log not in import
   warnings: string[];      // from decode (legacy/lossy/dedup conflicts)
 }
 ```
