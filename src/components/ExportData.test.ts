@@ -94,11 +94,11 @@ describe('ExportData.vue', () => {
 
         await wrapper.find('button').trigger('click');
 
-        // We don't spy on getAllLogs anymore, we check the result (download triggered)
+        // Check the result (download triggered) rather than spying on the store
         expect(alertMock).not.toHaveBeenCalled();
         expect(createObjectURLMock).toHaveBeenCalled();
 
-        // Verify CSV content (basic check only, detailed logic tested in utils/export.test.ts)
+        // Verify CSV content (basic check only, detailed logic tested in utils/exportSchema.test.ts)
         expect(createObjectURLMock.mock.calls.length).toBeGreaterThan(0);
         const args = createObjectURLMock.mock.calls[0];
         if (!args) throw new Error('No args');
