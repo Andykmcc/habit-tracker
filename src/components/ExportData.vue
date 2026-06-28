@@ -34,8 +34,8 @@ const exportData = () => {
 </script>
 
 <template>
-  <div class="mt-8 text-center">
-    <button 
+  <div class="text-center">
+    <button
       @click="exportData"
       class="relative px-6 py-3 rounded-lg text-sm font-medium focus:outline-none border-2 border-blue-300 text-blue-600 hover:bg-blue-50 transition-colors"
     >

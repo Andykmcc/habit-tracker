@@ -221,7 +221,9 @@ const stats = computed(() => {
       </div>
 
       <!-- Data export / import / clear -->
-      <div class="flex justify-center gap-4">
+      <!-- 3-col grid so each button centers in its third: the middle (Import)
+           lands on the container center, aligning with the centered habit selector above. -->
+      <div class="grid grid-cols-3 items-start gap-2">
         <ExportData />
         <ImportData />
         <ClearButton @clear="store.clearAllLogs()" />

@@ -29,7 +29,7 @@ const stopClearHold = () => {
 </script>
 
 <template>
-  <div class="mt-8 text-center">
+  <div class="text-center">
     <button 
       @mousedown="startClearHold"
       @mouseup="stopClearHold"
