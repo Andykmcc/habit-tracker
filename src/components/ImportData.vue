@@ -46,8 +46,13 @@ const onFileChange = (e: Event) => {
 
 const apply = () => {
   if (fileText.value === null) return;
-  store.importCsv(fileText.value, { ...options });
-  close();
+  try {
+    store.importCsv(fileText.value, { ...options });
+    close();
+  } catch (e) {
+    error.value = e instanceof ImportError ? e.message : 'Import failed unexpectedly.';
+    summary.value = null;
+  }
 };
 
 const reset = () => {

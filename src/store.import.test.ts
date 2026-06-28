@@ -162,6 +162,23 @@ describe('importCsv / previewImport', () => {
     expect(summary.warnings.some(w => w.toLowerCase().includes('legacy'))).toBe(true);
   });
 
+  it('round-trips the full store through encodeSnapshot -> importCsv(mirror) exactly', () => {
+    const store = useHabitStore();
+    const h1 = store.createHabit('Run');
+    const _h2 = store.createHabit('Read, Write "stuff"'); // name with CSV special chars; deliberately unused after creation
+    void _h2;
+    store.setActiveHabit(h1);
+    store.upsertLog('2026-06-01', true, 'Note with\nnewline and "quotes", comma');
+    store.upsertLog('2026-06-02', null);
+    // h2 deliberately has no logs (zero-log habit)
+
+    const before = store.getFullSnapshot();
+    const csv = encodeSnapshot(before);
+    store.importCsv(csv, { conflictWinner: 'imported', mirror: true });
+
+    expect(store.getFullSnapshot()).toEqual(before);
+  });
+
   it('a decode error throws and leaves storage untouched (atomicity)', () => {
     const store = useHabitStore();
     const h1 = store.createHabit('Run');

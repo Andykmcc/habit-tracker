@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import ImportData from './ImportData.vue';
@@ -100,6 +100,29 @@ describe('ImportData.vue', () => {
     expect(preview).toContain('1 deleted'); // h2 (and its log) deleted under mirror
     // preview is a dry run: nothing written yet
     expect(store.getFullSnapshot().habits[h2]).toBeTruthy();
+  });
+
+  it('surfaces an error and keeps the dialog open if applying throws', async () => {
+    const store = useHabitStore(pinia);
+    const h1 = store.createHabit('Run');
+    store.setActiveHabit(h1);
+    store.upsertLog('2026-06-01', true);
+
+    const csv = encodeSnapshot({
+      habits: { [h1]: { id: h1, name: 'Run', createdAt: '2026-01-01T00:00:00.000Z' } },
+      logs: { [h1]: { '2026-06-01': { status: false } } },
+    });
+
+    const wrapper = mount(ImportData, { global: { plugins: [pinia] } });
+    await (wrapper.vm as any).loadFile(file(csv));
+    await wrapper.vm.$nextTick();
+
+    vi.spyOn(store, 'importCsv').mockImplementation(() => { throw new Error('boom'); });
+    await wrapper.find('[data-test="apply"]').trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('[data-test="error"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="apply"]').exists()).toBe(false); // hidden once summary cleared
   });
 
   it('cancel resets the dialog and leaves the store untouched', async () => {
