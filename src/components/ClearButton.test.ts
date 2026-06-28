@@ -16,7 +16,7 @@ describe('ClearButton', () => {
 
         const button = wrapper.find('button');
         expect(button.exists()).toBe(true);
-        expect(button.text()).toContain('Clear All History');
+        expect(button.text()).toContain('Clear History');
     });
 
     it('should show "Hold to Clear..." when mouse is held down', async () => {
@@ -77,7 +77,7 @@ describe('ClearButton', () => {
         await button.trigger('mouseleave');
 
         // Text should reset
-        expect(button.text()).toContain('Clear All History');
+        expect(button.text()).toContain('Clear History');
 
         // Fast-forward time
         vi.advanceTimersByTime(3000);
