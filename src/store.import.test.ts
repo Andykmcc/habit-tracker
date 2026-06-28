@@ -165,8 +165,7 @@ describe('importCsv / previewImport', () => {
   it('round-trips the full store through encodeSnapshot -> importCsv(mirror) exactly', () => {
     const store = useHabitStore();
     const h1 = store.createHabit('Run');
-    const _h2 = store.createHabit('Read, Write "stuff"'); // name with CSV special chars; deliberately unused after creation
-    void _h2;
+    store.createHabit('Read, Write "stuff"'); // zero-log habit; name has CSV special chars
     store.setActiveHabit(h1);
     store.upsertLog('2026-06-01', true, 'Note with\nnewline and "quotes", comma');
     store.upsertLog('2026-06-02', null);
