@@ -68,6 +68,18 @@ describe('replaceAllData', () => {
     expect(store.getFullSnapshot()).toEqual(snap);
   });
 
+  it('clears active habit and logs when replaced with an empty snapshot', () => {
+    const store = useHabitStore();
+    const h1 = store.createHabit('Run');
+    store.setActiveHabit(h1);
+    store.upsertLog('2026-06-01', true);
+
+    store.replaceAllData({ habits: {}, logs: {} });
+
+    expect(store.getFullSnapshot()).toEqual({ habits: {}, logs: {} });
+    expect(store.activeHabitId).toBeNull();
+  });
+
   it('removes habits/logs not present in the new snapshot (mirror)', () => {
     const store = useHabitStore();
     const h1 = store.createHabit('Run');
@@ -106,6 +118,7 @@ describe('importCsv / previewImport', () => {
     const summary = store.previewImport(csv, { conflictWinner: 'imported', mirror: false });
     expect(summary.logsOverwritten).toBe(1);
     expect(summary.logsAdded).toBe(1);
+    expect(summary.warnings).toEqual([]); // clean v2 file => no warnings
     // unchanged on disk
     expect(store.getFullSnapshot().logs[h1]!['2026-06-01']).toEqual({ status: true, note: 'local' });
   });
@@ -123,6 +136,30 @@ describe('importCsv / previewImport', () => {
 
     store.importCsv(csv, { conflictWinner: 'imported', mirror: false });
     expect(store.getFullSnapshot().logs[h1]!['2026-06-01']).toEqual({ status: false, note: 'imported' });
+  });
+
+  it('imports a legacy v1 CSV end-to-end, reconciling onto the matching local habit and surfacing a warning', () => {
+    const store = useHabitStore();
+    const h1 = store.createHabit('Run');
+    store.setActiveHabit(h1);
+    store.upsertLog('2026-06-01', true, 'local');
+
+    const legacyCsv = [
+      'Date,Habit Name,Status,Label,Note',
+      '2026-06-02,Run,Failed,✕,',
+    ].join('\n');
+
+    const summary = store.importCsv(legacyCsv, { conflictWinner: 'imported', mirror: false });
+
+    const snap = store.getFullSnapshot();
+    // legacy habit matched local "Run" by name -> reconciled onto h1, no duplicate habit
+    expect(Object.keys(snap.habits)).toEqual([h1]);
+    expect(snap.logs[h1]).toEqual({
+      '2026-06-01': { status: true, note: 'local' }, // untouched local log
+      '2026-06-02': { status: false },               // added from the legacy import
+    });
+    expect(summary.logsAdded).toBe(1);
+    expect(summary.warnings.some(w => w.toLowerCase().includes('legacy'))).toBe(true);
   });
 
   it('a decode error throws and leaves storage untouched (atomicity)', () => {
