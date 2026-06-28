@@ -18,6 +18,11 @@ export interface ExportEntry {
     note: string;
 }
 
+export interface Snapshot {
+    habits: Record<string, Habit>;   // habitId -> Habit
+    logs: Record<string, DailyLogs>; // habitId -> { date -> DailyLog }
+}
+
 export interface Habit {
     id: string;
     name: string;
@@ -274,6 +279,34 @@ export const useHabitStore = defineStore('habit', () => {
         return allEntries.sort((a, b) => b.date.localeCompare(a.date));
     };
 
+    const getFullSnapshot = (): Snapshot => {
+        const habitsCopy: Record<string, Habit> = {};
+        for (const [id, h] of Object.entries(habits.value)) {
+            habitsCopy[id] = { ...h };
+        }
+
+        const logsByHabit: Record<string, DailyLogs> = {};
+        for (const habit of Object.values(habits.value)) {
+            const habitLogs: DailyLogs = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(`habit:${habit.id}:`)) {
+                    try {
+                        const partition = JSON.parse(localStorage.getItem(key) || '{}') as DailyLogs;
+                        Object.assign(habitLogs, partition);
+                    } catch (e) {
+                        console.error(`Failed to parse logs for key ${key}`, e);
+                    }
+                }
+            }
+            if (Object.keys(habitLogs).length > 0) {
+                logsByHabit[habit.id] = habitLogs;
+            }
+        }
+
+        return { habits: habitsCopy, logs: logsByHabit };
+    };
+
     return {
         // State
         habits,
@@ -292,5 +325,6 @@ export const useHabitStore = defineStore('habit', () => {
         setNote,
         clearAllLogs,
         getAllLogs,
+        getFullSnapshot,
     };
 });
