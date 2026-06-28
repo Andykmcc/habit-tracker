@@ -13,12 +13,23 @@ export const parseRows = (text: string): string[][] => {
 
   const rows: string[][] = [];
   let field = '';
+  let fieldQuoted = false;   // this field contained an opening quote
   let row: string[] = [];
+  let rowHasContent = false; // any field was quoted/non-empty, or the row had a separator
   let inQuotes = false;
   let i = 0;
 
-  const pushField = () => { row.push(field); field = ''; };
-  const pushRow = () => { rows.push(row); row = []; };
+  const pushField = () => {
+    row.push(field);
+    if (field !== '' || fieldQuoted) rowHasContent = true;
+    field = '';
+    fieldQuoted = false;
+  };
+  const pushRow = () => {
+    if (rowHasContent) rows.push(row); // skip genuinely blank lines
+    row = [];
+    rowHasContent = false;
+  };
 
   while (i < input.length) {
     const ch = input[i]!;
@@ -29,8 +40,8 @@ export const parseRows = (text: string): string[][] => {
       }
       field += ch; i++; continue;
     }
-    if (ch === '"') { inQuotes = true; i++; continue; }
-    if (ch === ',') { pushField(); i++; continue; }
+    if (ch === '"') { inQuotes = true; fieldQuoted = true; i++; continue; }
+    if (ch === ',') { pushField(); rowHasContent = true; i++; continue; }
     if (ch === '\r') {
       pushField(); pushRow();
       i += input[i + 1] === '\n' ? 2 : 1;
@@ -41,8 +52,7 @@ export const parseRows = (text: string): string[][] => {
   }
 
   if (inQuotes) throw new Error('Unterminated quoted field in CSV');
-  if (field !== '' || row.length > 0) { pushField(); pushRow(); }
+  if (field !== '' || fieldQuoted || row.length > 0) { pushField(); pushRow(); }
 
-  // Drop fully-blank lines (a single empty field).
-  return rows.filter(r => !(r.length === 1 && r[0] === ''));
+  return rows;
 };

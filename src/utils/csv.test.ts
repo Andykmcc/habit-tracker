@@ -43,7 +43,11 @@ describe('parseRows', () => {
   });
 
   it('throws on an unterminated quoted field', () => {
-    expect(() => parseRows('"abc')).toThrow();
+    expect(() => parseRows('"abc')).toThrow('Unterminated quoted field');
+  });
+
+  it('preserves a single quoted empty field (distinct from a blank line)', () => {
+    expect(parseRows('""')).toEqual([['']]);
   });
 
   it('returns [] for empty input', () => {
