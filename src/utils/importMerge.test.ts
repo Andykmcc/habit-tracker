@@ -65,11 +65,16 @@ describe('mergeSnapshots — mirror on', () => {
     }
   });
 
-  it('counts local-only logs and habits as deleted', () => {
+  it('counts all six change categories under mirror', () => {
     const { counts } = mergeSnapshots(local, imported, { conflictWinner: 'imported', mirror: true });
-    // local-only: h1/06-02 (log) and all of h2 (habit + its 1 log)
-    expect(counts.habitsDeleted).toBe(1); // h2
-    expect(counts.logsDeleted).toBe(2);   // h1/06-02 + h2/06-01
+    expect(counts).toEqual({
+      habitsAdded: 1,     // h3
+      habitsUpdated: 0,   // h1 metadata identical
+      habitsDeleted: 1,   // h2
+      logsAdded: 2,       // h1/06-03 + h3/06-01
+      logsOverwritten: 1, // h1/06-01 (local true/'local' -> imported false/'imported')
+      logsDeleted: 2,     // h1/06-02 + h2/06-01
+    });
   });
 
   it('empty import + mirror deletes everything', () => {

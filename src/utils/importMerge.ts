@@ -14,8 +14,9 @@ export interface MergeCounts {
   logsDeleted: number;
 }
 
+// Compares mutable metadata only; callers always pass two habits with the same id.
 const habitEqual = (a: Habit, b: Habit): boolean =>
-  a.id === b.id && a.name === b.name && a.createdAt === b.createdAt &&
+  a.name === b.name && a.createdAt === b.createdAt &&
   (a.color ?? '') === (b.color ?? '') &&
   (a.positiveLabel ?? '') === (b.positiveLabel ?? '') &&
   (a.negativeLabel ?? '') === (b.negativeLabel ?? '');
@@ -45,7 +46,7 @@ export const mergeSnapshots = (
     if (l && !im) {
       if (options.mirror) {
         counts.habitsDeleted++;
-        for (const _ of Object.keys(local.logs[id] ?? {})) counts.logsDeleted++;
+        counts.logsDeleted += Object.keys(local.logs[id] ?? {}).length;
         continue; // drop habit and its logs
       }
       habits[id] = l;
