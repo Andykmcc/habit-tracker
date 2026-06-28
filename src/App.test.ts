@@ -215,6 +215,13 @@ describe('App', () => {
         });
     });
 
+    it('renders the Import Data button', () => {
+        const pinia = createPinia();
+        setActivePinia(pinia);
+        const wrapper = mount(App, { global: { plugins: [pinia] } });
+        expect(wrapper.find('[data-test="import-button"]').exists()).toBe(true);
+    });
+
     describe('visibilitychange event', () => {
         it('should update currentDate and selectedDate to today when becoming visible', () => {
             const pinia = createPinia();
