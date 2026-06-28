@@ -13,14 +13,6 @@ export interface DailyLog {
 
 export type DailyLogs = Record<string, DailyLog>; // date (YYYY-MM-DD) -> { status, note }
 
-export interface ExportEntry {
-    date: string;
-    habitName: string;
-    status: string;
-    label: string;
-    note: string;
-}
-
 export interface Snapshot {
     habits: Record<string, Habit>;   // habitId -> Habit
     logs: Record<string, DailyLogs>; // habitId -> { date -> DailyLog }
@@ -243,47 +235,6 @@ export const useHabitStore = defineStore('habit', () => {
         keysToDelete.forEach(k => localStorage.removeItem(k));
     };
 
-    const getAllLogs = (): ExportEntry[] => {
-        const allEntries: ExportEntry[] = [];
-
-        for (const habit of Object.values(habits.value)) {
-            // Scan localStorage for keys matching `habit:${habit.id}:*`
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith(`habit:${habit.id}:`)) {
-                    try {
-                        const partitionLogs = JSON.parse(localStorage.getItem(key) || '{}') as DailyLogs;
-                        for (const [date, log] of Object.entries(partitionLogs)) {
-                            let statusStr = 'Skipped';
-                            let labelStr = '';
-                            if (log.status === true) {
-                                statusStr = 'Completed';
-                                labelStr = habit.positiveLabel || '✓';
-                            }
-                            if (log.status === false) {
-                                statusStr = 'Failed';
-                                labelStr = habit.negativeLabel || '✕';
-                            }
-
-                            allEntries.push({
-                                date,
-                                habitName: habit.name,
-                                status: statusStr,
-                                label: labelStr,
-                                note: log.note || '',
-                            });
-                        }
-                    } catch (e) {
-                        console.error(`Failed to parse logs for key ${key}`, e);
-                    }
-                }
-            }
-        }
-
-        // Sort by date descending
-        return allEntries.sort((a, b) => b.date.localeCompare(a.date));
-    };
-
     const getFullSnapshot = (): Snapshot => {
         const habitsCopy: Record<string, Habit> = {};
         for (const [id, h] of Object.entries(habits.value)) {
@@ -389,7 +340,6 @@ export const useHabitStore = defineStore('habit', () => {
         upsertLog,
         setNote,
         clearAllLogs,
-        getAllLogs,
         getFullSnapshot,
         replaceAllData,
         previewImport,
