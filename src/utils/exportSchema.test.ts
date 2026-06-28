@@ -95,4 +95,29 @@ describe('decodeCsv errors', () => {
     expect(snapshot.habits.h1!.name).toBe('Run');
     expect(warnings.some(w => w.includes('h1'))).toBe(true);
   });
+
+  it('does not spuriously warn about conflicting metadata when createdAt is defaulted across rows', () => {
+    const csv = [
+      'Schema Version,Habit ID,Habit Name,Created At,Color,Positive Label,Negative Label,Date,Status,Note',
+      '2,h1,Run,bad-date,,,,2026-06-01,Completed,',
+      '2,h1,Run,bad-date,,,,2026-06-02,Failed,',
+    ].join('\n');
+    const { snapshot, warnings } = decodeCsv(csv);
+    expect(warnings.filter(w => w.includes('differing details'))).toEqual([]);
+    expect(snapshot.logs.h1).toEqual({
+      '2026-06-01': { status: true },
+      '2026-06-02': { status: false },
+    });
+  });
+
+  it('warns and keeps the last value on a duplicate (habit, date) entry', () => {
+    const csv = [
+      'Schema Version,Habit ID,Habit Name,Created At,Color,Positive Label,Negative Label,Date,Status,Note',
+      '2,h1,Run,2026-01-01T00:00:00.000Z,,,,2026-06-01,Completed,first',
+      '2,h1,Run,2026-01-01T00:00:00.000Z,,,,2026-06-01,Failed,second',
+    ].join('\n');
+    const { snapshot, warnings } = decodeCsv(csv);
+    expect(warnings.some(w => w.includes('duplicate') && w.includes('2026-06-01'))).toBe(true);
+    expect(snapshot.logs.h1!['2026-06-01']).toEqual({ status: false, note: 'second' });
+  });
 });

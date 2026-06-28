@@ -97,22 +97,23 @@ const decodeV2 = (rows: string[][]): { snapshot: Snapshot; version: number; warn
     if (!id) throw new ImportError('MALFORMED', `Row ${rowNum}: missing Habit ID`);
 
     const name = row[2] ?? '';
-    let createdAt = (row[3] ?? '').trim();
-    if (!isValidIso(createdAt)) {
-      createdAt = new Date().toISOString();
-      warnings.push(`Row ${rowNum}: invalid Created At for "${name}"; defaulted to now.`);
-    }
-    const habit: Habit = {
-      id, name, createdAt,
-      color: (row[4] ?? '') || undefined,
-      positiveLabel: (row[5] ?? '') || undefined,
-      negativeLabel: (row[6] ?? '') || undefined,
-    };
+    const color = (row[4] ?? '') || undefined;
+    const positiveLabel = (row[5] ?? '') || undefined;
+    const negativeLabel = (row[6] ?? '') || undefined;
+    // Identity for dedup deliberately excludes createdAt: it may be defaulted to
+    // `now` per-row for a corrupt file and would otherwise drift between rows of the
+    // same habit, producing spurious "differing details" warnings.
+    const identity = JSON.stringify({ name, color, positiveLabel, negativeLabel });
 
     if (!habits[id]) {
-      habits[id] = habit;
-      seenMeta.set(id, JSON.stringify(habit));
-    } else if (seenMeta.get(id) !== JSON.stringify(habit)) {
+      let createdAt = (row[3] ?? '').trim();
+      if (!isValidIso(createdAt)) {
+        createdAt = new Date().toISOString();
+        warnings.push(`Row ${rowNum}: invalid Created At for "${name}"; defaulted to now.`);
+      }
+      habits[id] = { id, name, createdAt, color, positiveLabel, negativeLabel };
+      seenMeta.set(id, identity);
+    } else if (seenMeta.get(id) !== identity) {
       warnings.push(`Habit ID "${id}" appears with differing details; kept the first occurrence.`);
     }
 
@@ -121,6 +122,9 @@ const decodeV2 = (rows: string[][]): { snapshot: Snapshot; version: number; warn
       if (!isValidDate(date)) throw new ImportError('MALFORMED', `Row ${rowNum}: invalid Date "${date}"`);
       const status = parseStatus((row[8] ?? '').trim(), rowNum);
       const note = row[9] ?? '';
+      if (logs[id]?.[date] !== undefined) {
+        warnings.push(`Row ${rowNum}: duplicate entry for habit "${id}" on ${date}; kept the last value.`);
+      }
       (logs[id] ||= {})[date] = { status, note: note || undefined };
     }
   });
