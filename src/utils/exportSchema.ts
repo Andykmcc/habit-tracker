@@ -132,6 +132,44 @@ const decodeV2 = (rows: string[][]): { snapshot: Snapshot; version: number; warn
   return { snapshot: { habits, logs }, version: fileVersion ?? CURRENT_SCHEMA_VERSION, warnings };
 };
 
+const decodeV1 = (rows: string[][]): { snapshot: Snapshot; warnings: string[] } => {
+  const warnings: string[] = [];
+  const nameToId = new Map<string, string>();
+  const habits: Record<string, Habit> = {};
+  const logs: Record<string, DailyLogs> = {};
+  const createdAt = new Date().toISOString();
+  let counter = 0;
+
+  rows.slice(1).forEach((row, i) => {
+    const rowNum = i + 2;
+    const date = (row[0] ?? '').trim();
+    const name = row[1] ?? '';
+    const statusStr = (row[2] ?? '').trim();
+    // row[3] (Label) is intentionally ignored — derived, not source of truth.
+    const note = row[4] ?? '';
+
+    if (!name) throw new ImportError('MALFORMED', `Row ${rowNum}: missing Habit Name`);
+
+    let id = nameToId.get(name);
+    if (!id) {
+      id = `legacy-habit-${++counter}`;
+      nameToId.set(name, id);
+      habits[id] = { id, name, createdAt };
+    }
+
+    if (date) {
+      if (!isValidDate(date)) throw new ImportError('MALFORMED', `Row ${rowNum}: invalid Date "${date}"`);
+      const status = parseStatus(statusStr, rowNum);
+      (logs[id] ||= {})[date] = { status, note: note || undefined };
+    }
+  });
+
+  if (Object.keys(habits).length > 0) {
+    warnings.push('Imported a legacy export: habit colors and custom labels were not available and were reset to defaults.');
+  }
+  return { snapshot: { habits, logs }, warnings };
+};
+
 export const decodeCsv = (text: string): { snapshot: Snapshot; version: number; warnings: string[] } => {
   if ((text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text).trim() === '') {
     throw new ImportError('EMPTY', 'The file is empty.');
@@ -158,8 +196,8 @@ export const decodeCsv = (text: string): { snapshot: Snapshot; version: number; 
   }
 
   if (arraysEqual(header, LEGACY_HEADER)) {
-    // Implemented in the next task.
-    throw new ImportError('UNRECOGNIZED', 'Legacy import not yet implemented.');
+    const { snapshot, warnings } = decodeV1(rows);
+    return { snapshot, version: 1, warnings };
   }
 
   throw new ImportError('UNRECOGNIZED', 'This file is not a recognized habit export.');

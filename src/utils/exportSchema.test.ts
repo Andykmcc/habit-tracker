@@ -121,3 +121,38 @@ describe('decodeCsv errors', () => {
     expect(snapshot.logs.h1!['2026-06-01']).toEqual({ status: false, note: 'second' });
   });
 });
+
+describe('legacy v1 decode', () => {
+  const legacy = [
+    'Date,Habit Name,Status,Label,Note',
+    '2025-01-01,Run,Completed,✓,Good run',
+    '2025-01-02,Run,Failed,✕,',
+    '2025-01-01,Read,Skipped,,"Read, later"',
+  ].join('\n');
+
+  it('decodes name-grouped habits with mapped statuses and notes', () => {
+    const { snapshot, version, warnings } = decodeCsv(legacy);
+    expect(version).toBe(1);
+    expect(warnings.length).toBeGreaterThan(0); // lossy-import warning
+
+    const byName = Object.values(snapshot.habits);
+    const run = byName.find(h => h.name === 'Run')!;
+    const read = byName.find(h => h.name === 'Read')!;
+    expect(run).toBeTruthy();
+    expect(read).toBeTruthy();
+    expect(run.color).toBeUndefined();
+
+    expect(snapshot.logs[run.id]).toEqual({
+      '2025-01-01': { status: true, note: 'Good run' },
+      '2025-01-02': { status: false },
+    });
+    expect(snapshot.logs[read.id]).toEqual({
+      '2025-01-01': { status: null, note: 'Read, later' },
+    });
+  });
+
+  it('MALFORMED for a bad status in a legacy row', () => {
+    const bad = 'Date,Habit Name,Status,Label,Note\n2025-01-01,Run,Done,✓,';
+    expect(() => decodeCsv(bad)).toThrow(expect.objectContaining({ code: 'MALFORMED' }));
+  });
+});
