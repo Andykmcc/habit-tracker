@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useHabitStore } from './store';
+import { encodeSnapshot } from './utils/exportSchema';
 
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
@@ -48,5 +49,91 @@ describe('getFullSnapshot', () => {
     const snap = store.getFullSnapshot();
     expect(snap.habits[h1]!.name).toBe('Empty');
     expect(snap.logs[h1]).toBeUndefined();
+  });
+});
+
+describe('replaceAllData', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    localStorage.clear();
+  });
+
+  it('round-trips a snapshot through getFullSnapshot', () => {
+    const store = useHabitStore();
+    const snap = {
+      habits: { a: { id: 'a', name: 'A', createdAt: '2026-01-01T00:00:00.000Z' } },
+      logs: { a: { '2026-06-01': { status: true, note: 'hi' }, '2026-07-01': { status: null } } },
+    };
+    store.replaceAllData(snap);
+    expect(store.getFullSnapshot()).toEqual(snap);
+  });
+
+  it('removes habits/logs not present in the new snapshot (mirror)', () => {
+    const store = useHabitStore();
+    const h1 = store.createHabit('Run');
+    store.setActiveHabit(h1);
+    store.upsertLog('2026-06-01', true);
+
+    store.replaceAllData({
+      habits: { b: { id: 'b', name: 'B', createdAt: '2026-01-01T00:00:00.000Z' } },
+      logs: {},
+    });
+
+    const snap = store.getFullSnapshot();
+    expect(snap.habits[h1]).toBeUndefined();
+    expect(snap.habits.b).toBeTruthy();
+    expect(store.activeHabitId).toBe('b'); // active reconciled to surviving habit
+  });
+});
+
+describe('importCsv / previewImport', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    localStorage.clear();
+  });
+
+  it('previewImport reports counts without writing', () => {
+    const store = useHabitStore();
+    const h1 = store.createHabit('Run');
+    store.setActiveHabit(h1);
+    store.upsertLog('2026-06-01', true, 'local');
+
+    const csv = encodeSnapshot({
+      habits: { [h1]: { id: h1, name: 'Run', createdAt: '2026-01-01T00:00:00.000Z' } },
+      logs: { [h1]: { '2026-06-01': { status: false, note: 'imported' }, '2026-06-02': { status: true } } },
+    });
+
+    const summary = store.previewImport(csv, { conflictWinner: 'imported', mirror: false });
+    expect(summary.logsOverwritten).toBe(1);
+    expect(summary.logsAdded).toBe(1);
+    // unchanged on disk
+    expect(store.getFullSnapshot().logs[h1]!['2026-06-01']).toEqual({ status: true, note: 'local' });
+  });
+
+  it('importCsv applies the merge to storage', () => {
+    const store = useHabitStore();
+    const h1 = store.createHabit('Run');
+    store.setActiveHabit(h1);
+    store.upsertLog('2026-06-01', true, 'local');
+
+    const csv = encodeSnapshot({
+      habits: { [h1]: { id: h1, name: 'Run', createdAt: '2026-01-01T00:00:00.000Z' } },
+      logs: { [h1]: { '2026-06-01': { status: false, note: 'imported' } } },
+    });
+
+    store.importCsv(csv, { conflictWinner: 'imported', mirror: false });
+    expect(store.getFullSnapshot().logs[h1]!['2026-06-01']).toEqual({ status: false, note: 'imported' });
+  });
+
+  it('a decode error throws and leaves storage untouched (atomicity)', () => {
+    const store = useHabitStore();
+    const h1 = store.createHabit('Run');
+    store.setActiveHabit(h1);
+    store.upsertLog('2026-06-01', true, 'local');
+    const before = store.getFullSnapshot();
+
+    expect(() => store.importCsv('garbage,header\n1,2', { conflictWinner: 'imported', mirror: false }))
+      .toThrow();
+    expect(store.getFullSnapshot()).toEqual(before);
   });
 });
