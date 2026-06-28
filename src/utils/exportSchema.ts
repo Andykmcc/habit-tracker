@@ -143,7 +143,7 @@ const decodeV1 = (rows: string[][]): { snapshot: Snapshot; warnings: string[] } 
   rows.slice(1).forEach((row, i) => {
     const rowNum = i + 2;
     const date = (row[0] ?? '').trim();
-    const name = row[1] ?? '';
+    const name = (row[1] ?? '').trim();
     const statusStr = (row[2] ?? '').trim();
     // row[3] (Label) is intentionally ignored — derived, not source of truth.
     const note = row[4] ?? '';

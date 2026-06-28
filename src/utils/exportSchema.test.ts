@@ -155,4 +155,9 @@ describe('legacy v1 decode', () => {
     const bad = 'Date,Habit Name,Status,Label,Note\n2025-01-01,Run,Done,✓,';
     expect(() => decodeCsv(bad)).toThrow(expect.objectContaining({ code: 'MALFORMED' }));
   });
+
+  it('MALFORMED for a whitespace-only habit name', () => {
+    const bad = 'Date,Habit Name,Status,Label,Note\n2025-01-01,  ,Completed,✓,';
+    expect(() => decodeCsv(bad)).toThrow(expect.objectContaining({ code: 'MALFORMED' }));
+  });
 });
