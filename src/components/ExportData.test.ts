@@ -94,11 +94,11 @@ describe('ExportData.vue', () => {
 
         await wrapper.find('button').trigger('click');
 
-        // We don't spy on getAllLogs anymore, we check the result (download triggered)
+        // Check the result (download triggered) rather than spying on the store
         expect(alertMock).not.toHaveBeenCalled();
         expect(createObjectURLMock).toHaveBeenCalled();
 
-        // Verify CSV content (basic check only, detailed logic tested in utils/export.test.ts)
+        // Verify CSV content (basic check only, detailed logic tested in utils/exportSchema.test.ts)
         expect(createObjectURLMock.mock.calls.length).toBeGreaterThan(0);
         const args = createObjectURLMock.mock.calls[0];
         if (!args) throw new Error('No args');
@@ -106,9 +106,10 @@ describe('ExportData.vue', () => {
         expect(blob).toBeInstanceOf(Blob);
         const content = await blob.text();
 
-        // Basic check to ensure content is generated
-        expect(content).toContain('Date,Habit Name,Status,Label,Note');
-        expect(content).toContain('2025-01-01,Test Habit,Completed,✓,Note');
+        // New v2 format: versioned header + reconstructable row.
+        expect(content).toContain('Schema Version,Habit ID,Habit Name,Created At,Color,Positive Label,Negative Label,Date,Status,Note');
+        expect(content).toContain(',Test Habit,');
+        expect(content).toContain(',2025-01-01,Completed,');
 
         expect(appendChildMock).toHaveBeenCalled();
         expect(clickMock).toHaveBeenCalled();

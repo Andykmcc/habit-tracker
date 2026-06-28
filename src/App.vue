@@ -11,6 +11,7 @@ import Calendar from './components/Calendar.vue';
 import ClearButton from './components/ClearButton.vue';
 import HabitSelector from './components/HabitSelector.vue';
 import ExportData from './components/ExportData.vue';
+import ImportData from './components/ImportData.vue';
 
 import OnboardingToast from './components/OnboardingToast.vue';
 
@@ -219,9 +220,12 @@ const stats = computed(() => {
         <HabitSelector />
       </div>
 
-      <!-- Clear History Button -->
-      <div class="flex justify-center gap-4">
+      <!-- Data export / import / clear -->
+      <!-- 3-col grid so each button centers in its third: the middle (Import)
+           lands on the container center, aligning with the centered habit selector above. -->
+      <div class="grid grid-cols-3 items-start gap-2">
         <ExportData />
+        <ImportData />
         <ClearButton @clear="store.clearAllLogs()" />
       </div>
 

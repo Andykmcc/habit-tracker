@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia';
 import { useLocalStorage } from '@vueuse/core';
 import { computed, ref, watch } from 'vue';
+import { decodeCsv } from './utils/exportSchema';
+import { mergeSnapshots, reconcileLegacyHabitIds } from './utils/importMerge';
+import type { ImportOptions, MergeCounts } from './utils/importMerge';
 
 // Types
 export interface DailyLog {
@@ -10,13 +13,12 @@ export interface DailyLog {
 
 export type DailyLogs = Record<string, DailyLog>; // date (YYYY-MM-DD) -> { status, note }
 
-export interface ExportEntry {
-    date: string;
-    habitName: string;
-    status: string;
-    label: string;
-    note: string;
+export interface Snapshot {
+    habits: Record<string, Habit>;   // habitId -> Habit
+    logs: Record<string, DailyLogs>; // habitId -> { date -> DailyLog }
 }
+
+export type ImportSummary = MergeCounts & { warnings: string[] };
 
 export interface Habit {
     id: string;
@@ -233,45 +235,92 @@ export const useHabitStore = defineStore('habit', () => {
         keysToDelete.forEach(k => localStorage.removeItem(k));
     };
 
-    const getAllLogs = (): ExportEntry[] => {
-        const allEntries: ExportEntry[] = [];
+    const getFullSnapshot = (): Snapshot => {
+        const habitsCopy: Record<string, Habit> = {};
+        for (const [id, h] of Object.entries(habits.value)) {
+            habitsCopy[id] = { ...h };
+        }
 
+        const logsByHabit: Record<string, DailyLogs> = {};
         for (const habit of Object.values(habits.value)) {
-            // Scan localStorage for keys matching `habit:${habit.id}:*`
+            const habitLogs: DailyLogs = {};
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
                 if (key && key.startsWith(`habit:${habit.id}:`)) {
                     try {
-                        const partitionLogs = JSON.parse(localStorage.getItem(key) || '{}') as DailyLogs;
-                        for (const [date, log] of Object.entries(partitionLogs)) {
-                            let statusStr = 'Skipped';
-                            let labelStr = '';
-                            if (log.status === true) {
-                                statusStr = 'Completed';
-                                labelStr = habit.positiveLabel || '✓';
-                            }
-                            if (log.status === false) {
-                                statusStr = 'Failed';
-                                labelStr = habit.negativeLabel || '✕';
-                            }
-
-                            allEntries.push({
-                                date,
-                                habitName: habit.name,
-                                status: statusStr,
-                                label: labelStr,
-                                note: log.note || '',
-                            });
-                        }
+                        const partition = JSON.parse(localStorage.getItem(key) || '{}') as DailyLogs;
+                        Object.assign(habitLogs, partition);
                     } catch (e) {
                         console.error(`Failed to parse logs for key ${key}`, e);
                     }
                 }
             }
+            if (Object.keys(habitLogs).length > 0) {
+                logsByHabit[habit.id] = habitLogs;
+            }
         }
 
-        // Sort by date descending
-        return allEntries.sort((a, b) => b.date.localeCompare(a.date));
+        return { habits: habitsCopy, logs: logsByHabit };
+    };
+
+    const replaceAllData = (snapshot: Snapshot): void => {
+        // 1. Remove every existing log partition (keys "habit:<id>:<y>:<m>").
+        const keysToDelete: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('habit:')) keysToDelete.push(key);
+        }
+        keysToDelete.forEach(k => localStorage.removeItem(k));
+
+        // 2. Write the snapshot's logs back into partitions.
+        for (const [habitId, habitLogs] of Object.entries(snapshot.logs)) {
+            const partitions: Record<string, DailyLogs> = {};
+            for (const [date, log] of Object.entries(habitLogs)) {
+                const parts = date.split('-');
+                if (parts.length < 2) continue;
+                const year = parseInt(parts[0]!);
+                const month = parseInt(parts[1]!);
+                const pKey = getPartitionKey(habitId, year, month);
+                (partitions[pKey] ||= {})[date] = log;
+            }
+            for (const [pKey, part] of Object.entries(partitions)) {
+                localStorage.setItem(pKey, JSON.stringify(part));
+            }
+        }
+
+        // 3. Replace the habits map.
+        habits.value = { ...snapshot.habits };
+
+        // 4. Reconcile the active habit and reload its in-memory logs.
+        const ids = Object.keys(snapshot.habits);
+        if (activeHabitId.value && snapshot.habits[activeHabitId.value]) {
+            loadLogs(activeHabitId.value);
+        } else if (ids.length > 0) {
+            activeHabitId.value = ids[0]!;
+            loadLogs(ids[0]!);
+        } else {
+            activeHabitId.value = null;
+            logs.value = {};
+        }
+    };
+
+    const buildImport = (text: string, options: ImportOptions): { result: Snapshot; summary: ImportSummary } => {
+        const decoded = decodeCsv(text); // throws ImportError on bad input
+        const localSnapshot = getFullSnapshot();
+        const importedSnapshot = decoded.version === 1
+            ? reconcileLegacyHabitIds(decoded.snapshot, localSnapshot)
+            : decoded.snapshot;
+        const { result, counts } = mergeSnapshots(localSnapshot, importedSnapshot, options);
+        return { result, summary: { ...counts, warnings: decoded.warnings } };
+    };
+
+    const previewImport = (text: string, options: ImportOptions): ImportSummary =>
+        buildImport(text, options).summary;
+
+    const importCsv = (text: string, options: ImportOptions): ImportSummary => {
+        const { result, summary } = buildImport(text, options);
+        replaceAllData(result);
+        return summary;
     };
 
     return {
@@ -291,6 +340,9 @@ export const useHabitStore = defineStore('habit', () => {
         upsertLog,
         setNote,
         clearAllLogs,
-        getAllLogs,
+        getFullSnapshot,
+        replaceAllData,
+        previewImport,
+        importCsv,
     };
 });

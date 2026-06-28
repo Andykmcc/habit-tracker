@@ -29,7 +29,7 @@ const stopClearHold = () => {
 </script>
 
 <template>
-  <div class="mt-8 text-center">
+  <div class="text-center">
     <button 
       @mousedown="startClearHold"
       @mouseup="stopClearHold"
@@ -48,7 +48,7 @@ const stopClearHold = () => {
       
       <!-- Button text -->
       <span class="relative z-10">
-        {{ isClearing ? 'Hold to Clear...' : 'Clear All History' }}
+        {{ isClearing ? 'Hold to Clear...' : 'Clear History' }}
       </span>
     </button>
   </div>
