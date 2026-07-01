@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useHabitStore } from '../store';
 import { encodeSnapshot } from '../utils/exportSchema';
+import ActionButton from './ActionButton.vue';
 
 const store = useHabitStore();
 
@@ -34,12 +35,5 @@ const exportData = () => {
 </script>
 
 <template>
-  <div class="text-center">
-    <button
-      @click="exportData"
-      class="relative px-6 py-3 rounded-lg text-sm font-medium focus:outline-none border-2 border-blue-300 text-blue-600 hover:bg-blue-50 transition-colors"
-    >
-      Export Data
-    </button>
-  </div>
+  <ActionButton variant="blue" @click="exportData">Export Data</ActionButton>
 </template>

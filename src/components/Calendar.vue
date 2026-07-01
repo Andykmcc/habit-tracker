@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, addMonths, subMonths } from 'date-fns';
 import type { DailyLogs } from '../store';
+import { toDateKey } from '../utils/date';
 
 // Props
 const props = defineProps<{
@@ -40,13 +41,11 @@ const calendarDays = computed(() => {
 });
 
 const getDayStatus = (date: Date) => {
-  const dateStr = format(date, 'yyyy-MM-dd');
-  return props.logs[dateStr]?.status;
+  return props.logs[toDateKey(date)]?.status;
 };
 
 const hasNote = (date: Date) => {
-  const dateStr = format(date, 'yyyy-MM-dd');
-  return !!props.logs[dateStr]?.note;
+  return !!props.logs[toDateKey(date)]?.note;
 };
 
 const isClickable = (date: Date) => {
@@ -59,9 +58,7 @@ const isClickable = (date: Date) => {
 };
 
 const isSelected = (date: Date) => {
-  const dateStr = format(date, 'yyyy-MM-dd');
-  const selectedStr = format(props.selectedDate, 'yyyy-MM-dd');
-  return dateStr === selectedStr;
+  return toDateKey(date) === toDateKey(props.selectedDate);
 };
 
 const handleDateClick = (date: Date) => {

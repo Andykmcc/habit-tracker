@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import StatFigure from './StatFigure.vue';
+
 defineProps<{
   name: string;
   value: number | string;
@@ -7,7 +9,11 @@ defineProps<{
 
 <template>
   <div class="bg-white p-4 rounded-xl shadow-sm text-center">
-    <div class="text-2xl font-bold text-gray-900 stat-card-value">{{ value }}</div>
-    <div class="text-xs text-gray-500 uppercase tracking-wide stat-card-name">{{ name }}</div>
+    <StatFigure
+      :value="value"
+      :label="name"
+      value-class="stat-card-value"
+      label-class="stat-card-name"
+    />
   </div>
 </template>
