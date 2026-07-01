@@ -43,11 +43,49 @@ function generateId(): string {
 
 
 
+// All log partitions live under localStorage keys of the form
+// `habit:<habitId>:<year>:<month>`. These helpers centralize that key format
+// and the localStorage scanning it requires.
+const PARTITION_KEY_PREFIX = 'habit:';
+
 // Helper: Get partition key
 function getPartitionKey(habitId: string, year: number, month: number): string {
     // Month is 1-12
     const monthStr = month.toString().padStart(2, '0');
-    return `habit:${habitId}:${year}:${monthStr}`;
+    return `${PARTITION_KEY_PREFIX}${habitId}:${year}:${monthStr}`;
+}
+
+// Helper: prefix matching every partition belonging to one habit
+function habitPartitionPrefix(habitId: string): string {
+    return `${PARTITION_KEY_PREFIX}${habitId}:`;
+}
+
+// Helper: collect all localStorage keys under a partition prefix
+function partitionKeys(prefix: string): string[] {
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(prefix)) keys.push(key);
+    }
+    return keys;
+}
+
+// Helper: read and merge every partition under a prefix into one DailyLogs map
+function readPartitions(prefix: string): DailyLogs {
+    const merged: DailyLogs = {};
+    for (const key of partitionKeys(prefix)) {
+        try {
+            Object.assign(merged, JSON.parse(localStorage.getItem(key) || '{}'));
+        } catch (e) {
+            console.error(`Failed to parse logs for key ${key}`, e);
+        }
+    }
+    return merged;
+}
+
+// Helper: delete every partition under a prefix
+function removePartitions(prefix: string): void {
+    for (const key of partitionKeys(prefix)) localStorage.removeItem(key);
 }
 
 
@@ -76,21 +114,7 @@ export const useHabitStore = defineStore('habit', () => {
 
     // Load logs for a habit
     const loadLogs = (habitId: string) => {
-        logs.value = {};
-        if (!habitId) return;
-
-        // Scan localStorage for keys matching `habit:${habitId}:*`
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith(`habit:${habitId}:`)) {
-                try {
-                    const partitionLogs = JSON.parse(localStorage.getItem(key) || '{}');
-                    Object.assign(logs.value, partitionLogs);
-                } catch (e) {
-                    console.error(`Failed to parse logs for key ${key}`, e);
-                }
-            }
-        }
+        logs.value = habitId ? readPartitions(habitPartitionPrefix(habitId)) : {};
     };
 
     // Watch active habit to load logs
@@ -127,14 +151,7 @@ export const useHabitStore = defineStore('habit', () => {
         habits.value = newHabits;
 
         // Delete partitioned data
-        const keysToDelete: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith(`habit:${id}:`)) {
-                keysToDelete.push(key);
-            }
-        }
-        keysToDelete.forEach(k => localStorage.removeItem(k));
+        removePartitions(habitPartitionPrefix(id));
 
         // If deleting active habit, switch to another or null
         if (activeHabitId.value === id) {
@@ -219,20 +236,12 @@ export const useHabitStore = defineStore('habit', () => {
 
     const clearAllLogs = (): void => {
         if (!activeHabit.value) return;
-        const habitId = activeHabit.value.id;
 
         // Clear in-memory
         logs.value = {};
 
         // Clear storage
-        const keysToDelete: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith(`habit:${habitId}:`)) {
-                keysToDelete.push(key);
-            }
-        }
-        keysToDelete.forEach(k => localStorage.removeItem(k));
+        removePartitions(habitPartitionPrefix(activeHabit.value.id));
     };
 
     const getFullSnapshot = (): Snapshot => {
@@ -243,18 +252,7 @@ export const useHabitStore = defineStore('habit', () => {
 
         const logsByHabit: Record<string, DailyLogs> = {};
         for (const habit of Object.values(habits.value)) {
-            const habitLogs: DailyLogs = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith(`habit:${habit.id}:`)) {
-                    try {
-                        const partition = JSON.parse(localStorage.getItem(key) || '{}') as DailyLogs;
-                        Object.assign(habitLogs, partition);
-                    } catch (e) {
-                        console.error(`Failed to parse logs for key ${key}`, e);
-                    }
-                }
-            }
+            const habitLogs = readPartitions(habitPartitionPrefix(habit.id));
             if (Object.keys(habitLogs).length > 0) {
                 logsByHabit[habit.id] = habitLogs;
             }
@@ -265,12 +263,7 @@ export const useHabitStore = defineStore('habit', () => {
 
     const replaceAllData = (snapshot: Snapshot): void => {
         // 1. Remove every existing log partition (keys "habit:<id>:<y>:<m>").
-        const keysToDelete: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith('habit:')) keysToDelete.push(key);
-        }
-        keysToDelete.forEach(k => localStorage.removeItem(k));
+        removePartitions(PARTITION_KEY_PREFIX);
 
         // 2. Write the snapshot's logs back into partitions.
         for (const [habitId, habitLogs] of Object.entries(snapshot.logs)) {

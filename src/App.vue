@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { format, subDays } from 'date-fns';
+import { subDays } from 'date-fns';
 import { useHabitStore } from './store';
+import { toDateKey } from './utils/date';
 import { storeToRefs } from 'pinia';
 import HabitHeader from './components/HabitHeader.vue';
 import StatCard from './components/StatCard.vue';
@@ -70,7 +71,7 @@ const currentDate = ref(new Date());
 const selectedDate = ref(new Date()); // Currently selected date for viewing/editing
 
 // Computed
-const selectedDateStr = computed(() => format(selectedDate.value, 'yyyy-MM-dd'));
+const selectedDateStr = computed(() => toDateKey(selectedDate.value));
 
 // Writable computed for selected date's status to work with v-model
 const selectedStatus = computed({
@@ -99,8 +100,8 @@ const stats = computed(() => {
   const successRate = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
   // Rolling 90-day window (inclusive). Date keys are yyyy-MM-dd, so string compare is valid.
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const cutoffStr = format(subDays(new Date(), 90), 'yyyy-MM-dd');
+  const todayStr = toDateKey(new Date());
+  const cutoffStr = toDateKey(subDays(new Date(), 90));
   const recentTracked = trackedDays.filter(([date]) => date >= cutoffStr && date <= todayStr);
   const recentTotal = recentTracked.length;
   const recentCompleted = recentTracked.filter(([_, log]) => log?.status === true).length;
@@ -143,7 +144,7 @@ const stats = computed(() => {
   let checkDate = new Date();
   
   // Check today
-  const todayStatus = logs.value[format(checkDate, 'yyyy-MM-dd')]?.status;
+  const todayStatus = logs.value[toDateKey(checkDate)]?.status;
   if (todayStatus === true) {
     currentStreak++;
     checkDate = subDays(checkDate, 1);
@@ -157,7 +158,7 @@ const stats = computed(() => {
   
   // Check backwards
   while (true) {
-    const status = logs.value[format(checkDate, 'yyyy-MM-dd')]?.status;
+    const status = logs.value[toDateKey(checkDate)]?.status;
     if (status === true) {
       currentStreak++;
       checkDate = subDays(checkDate, 1);

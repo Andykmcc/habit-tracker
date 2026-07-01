@@ -4,6 +4,7 @@ import { useHabitStore } from '../store';
 import type { ImportSummary } from '../store';
 import type { ImportOptions } from '../utils/importMerge';
 import { ImportError } from '../utils/exportSchema';
+import ActionButton from './ActionButton.vue';
 
 const store = useHabitStore();
 
@@ -72,7 +73,7 @@ defineExpose({ loadFile, apply, options, summary, error });
 </script>
 
 <template>
-  <div class="text-center">
+  <div>
     <input
       ref="fileInput"
       type="file"
@@ -80,13 +81,9 @@ defineExpose({ loadFile, apply, options, summary, error });
       class="hidden"
       @change="onFileChange"
     />
-    <button
-      data-test="import-button"
-      class="relative px-6 py-3 rounded-lg text-sm font-medium focus:outline-none border-2 border-green-300 text-green-600 hover:bg-green-50 transition-colors"
-      @click="fileInput?.click()"
-    >
+    <ActionButton variant="green" data-test="import-button" @click="fileInput?.click()">
       Import Data
-    </button>
+    </ActionButton>
 
     <div
       v-if="fileText !== null"
