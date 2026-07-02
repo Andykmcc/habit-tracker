@@ -34,6 +34,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'happy-dom',
+    // Unit tests only. End-to-end specs live in e2e/**/*.spec.ts and are run by
+    // Playwright, not Vitest.
+    include: ['src/**/*.test.ts'],
     coverage: {
       reporter: ['json-summary'],
       provider: 'v8',
