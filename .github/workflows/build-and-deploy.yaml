@@ -53,3 +53,30 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # End-to-end tests run in a real browser against the Vite dev server, which
+  # Playwright starts and stops itself (see playwright.config.ts). Runs
+  # independently of the build/deploy job.
+  e2e:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: install dependencies
+        run: npm ci
+      - name: install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: run e2e tests
+        run: npm run e2e
+      - name: upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

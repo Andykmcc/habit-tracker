@@ -108,9 +108,10 @@ const getDayClasses = (day: Date | null, index: number) => {
         :class="getDayClasses(day, index)"
       >
         <template v-if="day">
-          <div 
+          <div
             class="relative w-full h-full flex flex-col items-center justify-center"
             :class="isClickable(day) ? 'cursor-pointer' : 'cursor-default'"
+            :data-date="toDateKey(day)"
             @click="handleDateClick(day)"
           >
             <div 
