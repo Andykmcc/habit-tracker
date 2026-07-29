@@ -30,6 +30,7 @@ const onBlur = () => {
 <template>
   <header class="text-center space-y-2 mb-4">
     <input
+      spellcheck="false"
       v-model="activityName"
       @focus="onFocus"
       @blur="onBlur"
