@@ -31,6 +31,8 @@ const onBlur = () => {
   <header class="text-center space-y-2 mb-4">
     <input
       spellcheck="false"
+      autocorrect="off"
+      autocapitalize="none"
       v-model="activityName"
       @focus="onFocus"
       @blur="onBlur"
