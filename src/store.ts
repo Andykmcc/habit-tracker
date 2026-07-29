@@ -109,8 +109,10 @@ export const useHabitStore = defineStore('habit', () => {
         return habits.value[activeHabitId.value] || null;
     });
 
-    // Computed: Get active habit's name
-    const activityName = computed(() => activeHabit.value?.name || DEFAULT_ACTIVITY_NAME);
+    // Computed: Get active habit's name. The default only stands in for "no habit
+    // at all" — an active habit with an empty name stays empty, so clearing the
+    // field mid-rename doesn't snap back to the default.
+    const activityName = computed(() => activeHabit.value ? activeHabit.value.name : DEFAULT_ACTIVITY_NAME);
 
     // Load logs for a habit
     const loadLogs = (habitId: string) => {

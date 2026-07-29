@@ -215,6 +215,25 @@ describe('App', () => {
         });
     });
 
+    it('lets the habit name field be cleared without resetting to the default', async () => {
+        localStorage.clear();
+        const pinia = createPinia();
+        setActivePinia(pinia);
+        const store = useHabitStore();
+        store.createHabit('Meditation');
+
+        const wrapper = mount(App, { global: { plugins: [pinia] } });
+        const input = wrapper.find('.habit-header-name');
+
+        await input.setValue('');
+
+        expect((input.element as HTMLInputElement).value).toBe('');
+        expect(store.activityName).toBe('');
+
+        wrapper.unmount();
+        localStorage.clear();
+    });
+
     it('renders the Import Data button', () => {
         const pinia = createPinia();
         setActivePinia(pinia);

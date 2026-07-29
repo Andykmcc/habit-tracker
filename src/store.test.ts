@@ -36,6 +36,24 @@ describe('useHabitStore', () => {
         expect(store.activityName).toBe('Morning Exercise');
     });
 
+    it('should keep the activity name empty when it is cleared', () => {
+        const store = useHabitStore();
+
+        store.createHabit('Morning Exercise');
+
+        // Clearing the field mid-edit must not snap back to the default name.
+        store.setActivityName('');
+
+        expect(store.activityName).toBe('');
+    });
+
+    it('should fall back to the default name when no habit is active', () => {
+        const store = useHabitStore();
+
+        expect(store.activeHabit).toBeNull();
+        expect(store.activityName).toBe('Daily Habit');
+    });
+
     it('should upsert log entries', () => {
         const store = useHabitStore();
 
