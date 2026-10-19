@@ -26,7 +26,7 @@
     "@playwright/test": "^1.64.0",
     "@types/node": "^24.19.2",
     "@vitejs/plugin-vue": "^6.0.10",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "@vue/test-utils": "^2.5.1",
     "@vue/tsconfig": "^0.9.1",
     "happy-dom": "^20.14.6",
