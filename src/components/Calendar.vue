@@ -87,7 +87,7 @@ const getDayClasses = (day: Date | null, index: number) => {
 </script>
 
 <template>
-  <div class="bg-white rounded-2xl shadow-sm p-6">
+  <div class="bg-white rounded-2xl shadow-sm p-6 select-none">
     <div class="flex items-center justify-between mb-4">
       <button @click="prevMonth" class="p-2 hover:bg-gray-100 rounded-full text-gray-500">←</button>
       <h3 class="font-semibold text-lg">{{ format(viewingMonth, 'MMMM yyyy') }}</h3>
